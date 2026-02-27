@@ -50,6 +50,7 @@ class CertificateHandler(FileSystemEventHandler):
             self.database.add_test_record(
                 serial=parsed.serial,
                 device_type=parsed.device_type,
+                barcode=parsed.barcode,
                 tested_at=parsed.tested_at,
                 result=parsed.result,
                 file_path=str(destination),
@@ -61,6 +62,7 @@ class CertificateHandler(FileSystemEventHandler):
             self.database.add_test_record(
                 serial="UNKNOWN",
                 device_type=None,
+                barcode=None,
                 tested_at=datetime.now(timezone.utc),
                 result="UNKNOWN",
                 file_path=str(quarantined),

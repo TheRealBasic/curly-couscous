@@ -24,12 +24,13 @@
   <section class="panel">
     <h2>Test History</h2>
     <table>
-      <thead><tr><th>Tested At</th><th>Result</th><th>Device Type</th><th>Parse Status</th><th>File</th></tr></thead>
+      <thead><tr><th>Tested At</th><th>Result</th><th>Barcode</th><th>Device Type</th><th>Parse Status</th><th>File</th></tr></thead>
       <tbody>
       {% for t in tests %}
         <tr>
           <td>{{ t.tested_at }}</td>
           <td class="{{ t.result|lower }}">{{ t.result }}</td>
+          <td>{{ t.barcode or '-' }}</td>
           <td>{{ t.device_type or '-' }}</td>
           <td>{{ t.parse_status }}</td>
           <td>{{ t.file_path }}</td>

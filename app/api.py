@@ -111,10 +111,10 @@ def create_app(config: AppConfig, database: Database) -> FastAPI:
 
         output = io.StringIO()
         writer = csv.writer(output)
-        writer.writerow(["id", "serial", "device_type", "tested_at", "result", "file_path", "imported_at", "parse_status", "parse_error"])
+        writer.writerow(["id", "serial", "barcode", "device_type", "tested_at", "result", "file_path", "imported_at", "parse_status", "parse_error"])
         for row in rows:
             writer.writerow(
-                [row.id, row.serial, row.device_type, row.tested_at, row.result, row.file_path, row.imported_at, row.parse_status, row.parse_error]
+                [row.id, row.serial, row.barcode, row.device_type, row.tested_at, row.result, row.file_path, row.imported_at, row.parse_status, row.parse_error]
             )
 
         output.seek(0)

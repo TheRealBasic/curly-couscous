@@ -54,11 +54,12 @@
   <section class="panel">
     <h2>Recent Failures</h2>
     <table>
-      <thead><tr><th>Serial</th><th>Device Type</th><th>Tested At</th><th>Result</th></tr></thead>
+      <thead><tr><th>Serial</th><th>Barcode</th><th>Device Type</th><th>Tested At</th><th>Result</th></tr></thead>
       <tbody>
       {% for t in recent_failures %}
         <tr>
           <td>{{ t.serial }}</td>
+          <td>{{ t.barcode or '-' }}</td>
           <td>{{ t.device_type or '-' }}</td>
           <td>{{ t.tested_at }}</td>
           <td class="fail">{{ t.result }}</td>
