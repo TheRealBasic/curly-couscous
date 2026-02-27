@@ -4,5 +4,5 @@ namespace XDockCertSync.Core.Interfaces;
 
 public interface ICertificatePayloadParser
 {
-    CertificateRecord Parse(string rawPayload);
+    CertificateImportDto Parse(string rawPayload);
 }

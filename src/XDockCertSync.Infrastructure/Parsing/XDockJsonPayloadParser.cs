@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using XDockCertSync.Core.Interfaces;
 using XDockCertSync.Core.Models;
@@ -8,24 +6,39 @@ namespace XDockCertSync.Infrastructure.Parsing;
 
 public sealed class XDockJsonPayloadParser : ICertificatePayloadParser
 {
-    public CertificateRecord Parse(string rawPayload)
+    public CertificateImportDto Parse(string rawPayload)
     {
         var document = JsonDocument.Parse(rawPayload);
         var root = document.RootElement;
 
-        var certificatePath = root.GetProperty("certificatePath").GetString() ?? string.Empty;
-        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(rawPayload)));
-
-        return new CertificateRecord
+        var dto = new CertificateImportDto
         {
-            DeviceId = root.GetProperty("deviceId").GetString() ?? "unknown",
-            Timestamp = root.TryGetProperty("timestamp", out var ts)
-                ? ts.GetDateTimeOffset()
-                : DateTimeOffset.UtcNow,
-            GasType = root.GetProperty("gasType").GetString() ?? "unknown",
-            Passed = root.GetProperty("passed").GetBoolean(),
-            CertificateFilePath = certificatePath,
-            CertificateHash = hash
+            DeviceId = root.TryGetProperty("deviceId", out var deviceId) ? deviceId.GetString() ?? string.Empty : string.Empty,
+            Timestamp = root.TryGetProperty("timestamp", out var ts) ? ts.GetDateTimeOffset() : DateTimeOffset.MinValue,
+            GasType = root.TryGetProperty("gasType", out var gasType) ? gasType.GetString() ?? string.Empty : string.Empty,
+            Passed = root.TryGetProperty("passed", out var passed) && passed.GetBoolean(),
+            CertificateFilePath = root.TryGetProperty("certificatePath", out var certPath) ? certPath.GetString() ?? string.Empty : string.Empty
         };
+
+        ValidateRequired(dto);
+        return dto;
+    }
+
+    private static void ValidateRequired(CertificateImportDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.DeviceId))
+        {
+            throw new InvalidDataException("deviceId is required.");
+        }
+
+        if (dto.Timestamp == DateTimeOffset.MinValue)
+        {
+            throw new InvalidDataException("timestamp is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.GasType))
+        {
+            throw new InvalidDataException("gasType is required.");
+        }
     }
 }

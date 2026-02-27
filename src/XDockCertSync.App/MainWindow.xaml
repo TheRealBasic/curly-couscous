@@ -4,9 +4,9 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="XDock Certificate Sync Settings"
-        Height="420"
-        Width="620"
+        Title="XDock Certificate Sync"
+        Height="760"
+        Width="1040"
         ResizeMode="CanMinimize">
     <Grid Margin="16">
         <Grid.RowDefinitions>
@@ -17,30 +17,80 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="180" />
+            <ColumnDefinition Width="*" />
             <ColumnDefinition Width="180" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
         <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,12,12" VerticalAlignment="Center" Text="IP / Hostname" />
-        <TextBox Grid.Row="0" Grid.Column="1" Margin="0,0,0,12" Text="{Binding Hostname, UpdateSourceTrigger=PropertyChanged}" />
+        <TextBox Grid.Row="0" Grid.Column="1" Margin="0,0,12,12" Text="{Binding Hostname, UpdateSourceTrigger=PropertyChanged}" />
+        <Button Grid.Row="0" Grid.Column="3" HorizontalAlignment="Right" Padding="18,8" Content="Import now" Command="{Binding ImportNowCommand}" />
 
         <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,12,12" VerticalAlignment="Center" Text="Username" />
-        <TextBox Grid.Row="1" Grid.Column="1" Margin="0,0,0,12" Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}" />
+        <TextBox Grid.Row="1" Grid.Column="1" Margin="0,0,12,12" Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}" />
 
         <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,12,12" VerticalAlignment="Center" Text="Password" />
-        <PasswordBox Grid.Row="2" Grid.Column="1" Margin="0,0,0,12" PasswordChanged="PasswordBox_OnPasswordChanged" />
+        <PasswordBox Grid.Row="2" Grid.Column="1" Margin="0,0,12,12" PasswordChanged="PasswordBox_OnPasswordChanged" />
 
         <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,12,12" VerticalAlignment="Center" Text="Polling Interval (sec)" />
-        <TextBox Grid.Row="3" Grid.Column="1" Margin="0,0,0,12" Text="{Binding PollingIntervalSeconds, UpdateSourceTrigger=PropertyChanged}" />
+        <TextBox Grid.Row="3" Grid.Column="1" Margin="0,0,12,12" Text="{Binding PollingIntervalSeconds, UpdateSourceTrigger=PropertyChanged}" />
 
         <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,12,12" VerticalAlignment="Center" Text="Output Directory" />
-        <TextBox Grid.Row="4" Grid.Column="1" Margin="0,0,0,12" Text="{Binding OutputDirectory, UpdateSourceTrigger=PropertyChanged}" />
+        <TextBox Grid.Row="4" Grid.Column="1" Margin="0,0,12,12" Text="{Binding OutputDirectory, UpdateSourceTrigger=PropertyChanged}" />
+        <Button Grid.Row="4" Grid.Column="3" HorizontalAlignment="Right" Padding="18,8" Content="Save Settings" Command="{Binding SaveCommand}" />
 
-        <Button Grid.Row="5" Grid.Column="1" HorizontalAlignment="Right" Padding="18,8" Content="Save Settings" Command="{Binding SaveCommand}" />
+        <GroupBox Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="4" Header="Query Filters" Margin="0,6,0,6" Padding="10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="120" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="120" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="120" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="120" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="120" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
 
-        <TextBlock Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,16,0,0" Foreground="DarkSlateGray" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
+                <TextBlock Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" Text="Detector serial" />
+                <TextBox Grid.Column="1" Margin="0,0,10,0" Text="{Binding FilterDetectorSerial, UpdateSourceTrigger=PropertyChanged}" />
+                <TextBlock Grid.Column="2" Margin="0,0,8,0" VerticalAlignment="Center" Text="From" />
+                <TextBox Grid.Column="3" Margin="0,0,10,0" Text="{Binding FilterDateFrom, UpdateSourceTrigger=PropertyChanged}" />
+                <TextBlock Grid.Column="4" Margin="0,0,8,0" VerticalAlignment="Center" Text="To" />
+                <TextBox Grid.Column="5" Margin="0,0,10,0" Text="{Binding FilterDateTo, UpdateSourceTrigger=PropertyChanged}" />
+                <TextBlock Grid.Column="6" Margin="0,0,8,0" VerticalAlignment="Center" Text="Pass/Fail" />
+                <ComboBox Grid.Column="7" Margin="0,0,10,0" ItemsSource="{Binding PassFailOptions}" SelectedItem="{Binding FilterPassFail}" />
+                <TextBlock Grid.Column="8" Margin="0,0,8,0" VerticalAlignment="Center" Text="Gas" />
+                <TextBox Grid.Column="9" Margin="0,0,10,0" Text="{Binding FilterGasType, UpdateSourceTrigger=PropertyChanged}" />
+                <Button Grid.Column="10" HorizontalAlignment="Right" Padding="12,6" Content="Apply filters" Command="{Binding ApplyFiltersCommand}" />
+            </Grid>
+        </GroupBox>
+
+        <StackPanel Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,6">
+            <Button Padding="12,6" Margin="0,0,8,0" Content="Export CSV" Command="{Binding ExportCsvCommand}" />
+            <Button Padding="12,6" Content="Export PDF Summary" Command="{Binding ExportPdfSummaryCommand}" />
+        </StackPanel>
+
+        <DataGrid Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="4" ItemsSource="{Binding Records}" IsReadOnly="True" AutoGenerateColumns="False">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Detector" Binding="{Binding DeviceId}" Width="130" />
+                <DataGridTextColumn Header="Timestamp" Binding="{Binding Timestamp}" Width="180" />
+                <DataGridTextColumn Header="Gas" Binding="{Binding GasType}" Width="120" />
+                <DataGridCheckBoxColumn Header="Passed" Binding="{Binding Passed}" Width="80" />
+                <DataGridTextColumn Header="Certificate Path" Binding="{Binding CertificateFilePath}" Width="*" />
+                <DataGridTextColumn Header="Hash" Binding="{Binding CertificateHash}" Width="230" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <TextBlock Grid.Row="9" Grid.Column="0" Grid.ColumnSpan="4" Margin="0,10,0,0" Foreground="DarkSlateGray" Text="{Binding StatusMessage}" TextWrapping="Wrap" />
     </Grid>
 </Window>

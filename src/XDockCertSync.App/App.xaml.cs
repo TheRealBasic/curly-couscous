@@ -4,6 +4,8 @@ using Serilog;
 using XDockCertSync.App.Models;
 using XDockCertSync.App.ViewModels;
 using XDockCertSync.Core.Interfaces;
+using XDockCertSync.Infrastructure.Exporting;
+using XDockCertSync.Infrastructure.Importing;
 using XDockCertSync.Infrastructure.Parsing;
 using XDockCertSync.Infrastructure.Transport;
 using XDockCertSync.Persistence;
@@ -19,6 +21,8 @@ public partial class App : Application
         base.OnStartup(e);
 
         var dataRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "XDockCertSync");
+        var rawDataDirectory = Path.Combine(dataRoot, "data", "raw");
+        var sqlitePath = Path.Combine(dataRoot, "data", "certificates.db");
         Directory.CreateDirectory(dataRoot);
 
         Log.Logger = new LoggerConfiguration()
@@ -36,6 +40,13 @@ public partial class App : Application
         services.AddSingleton<HttpClient>(_ => new HttpClient { BaseAddress = new Uri("http://localhost:5000/") });
         services.AddSingleton<IXDockClient, XDockManagerHttpClient>();
         services.AddSingleton<ICertificatePayloadParser, XDockJsonPayloadParser>();
+        services.AddSingleton<ICertificateRepository>(_ => new SqliteCertificateRepository(sqlitePath));
+        services.AddSingleton<ICertificateImportPipeline>(provider =>
+            new CertificateImportPipeline(
+                provider.GetRequiredService<ICertificatePayloadParser>(),
+                provider.GetRequiredService<ICertificateRepository>(),
+                rawDataDirectory));
+        services.AddSingleton<ICertificateExportService, CertificateExportService>();
         services.AddSingleton<ISettingsStore<SyncSettings>>(_ =>
             new JsonSettingsStore<SyncSettings>(Path.Combine(dataRoot, "settings.json")));
         services.AddSingleton<SettingsViewModel>();
