@@ -18,6 +18,7 @@ OVERALL_RESULT_PATTERN = re.compile(
     r"Overall\s*result\s*[:\-]?\s*(?P<value>Passed|Failed)",
     re.IGNORECASE,
 )
+BARCODE_PATTERN = re.compile(r"^\s*Barcode\s*[:\-]?\s*(?P<value>.+?)\s*$", re.IGNORECASE | re.MULTILINE)
 SERIAL_FALLBACK_PATTERN = re.compile(r"\b([A-Z0-9]{8})\b")
 
 
@@ -28,6 +29,7 @@ class ParsedCertificate:
     serial: str
     tested_at: datetime
     device_type: str | None
+    barcode: str | None
     result: str
 
 
@@ -50,8 +52,8 @@ def parse_filename(file_name: str) -> tuple[datetime, str]:
     return tested_at, serial
 
 
-def parse_pdf_text(file_path: Path) -> tuple[str | None, str | None, str]:
-    """Extract device type, result and full text from the PDF."""
+def parse_pdf_text(file_path: Path) -> tuple[str | None, str | None, str | None, str]:
+    """Extract device type, barcode, result and full text from the PDF."""
 
     text_parts: list[str] = []
     with pdfplumber.open(file_path) as pdf:
@@ -63,6 +65,9 @@ def parse_pdf_text(file_path: Path) -> tuple[str | None, str | None, str]:
     device_match = DEVICE_TYPE_PATTERN.search(full_text)
     device_type = device_match.group("value").strip() if device_match else None
 
+    barcode_match = BARCODE_PATTERN.search(full_text)
+    barcode = barcode_match.group("value").strip() if barcode_match else None
+
     result_match = OVERALL_RESULT_PATTERN.search(full_text)
     result = result_match.group("value").upper() if result_match else None
     if result == "PASSED":
@@ -70,7 +75,7 @@ def parse_pdf_text(file_path: Path) -> tuple[str | None, str | None, str]:
     elif result == "FAILED":
         result = "FAIL"
 
-    return device_type, result, full_text
+    return device_type, barcode, result, full_text
 
 
 def parse_certificate(file_path: Path) -> ParsedCertificate:
@@ -79,7 +84,7 @@ def parse_certificate(file_path: Path) -> ParsedCertificate:
     tested_at, serial = parse_filename(file_path.name)
 
     try:
-        device_type, result, full_text = parse_pdf_text(file_path)
+        device_type, barcode, result, full_text = parse_pdf_text(file_path)
     except Exception as exc:  # pdf library level exceptions
         raise ParseError(f"PDF parsing failed: {exc}") from exc
 
@@ -92,4 +97,4 @@ def parse_certificate(file_path: Path) -> ParsedCertificate:
     if result not in {"PASS", "FAIL"}:
         result = "UNKNOWN"
 
-    return ParsedCertificate(serial=serial, tested_at=tested_at, device_type=device_type, result=result)
+    return ParsedCertificate(serial=serial, tested_at=tested_at, device_type=device_type, barcode=barcode, result=result)

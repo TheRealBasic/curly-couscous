@@ -19,6 +19,7 @@ class TestRecord(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     serial: Mapped[str] = mapped_column(String(64), index=True)
+    barcode: Mapped[str | None] = mapped_column(String(128), index=True, nullable=True)
     device_type: Mapped[str | None] = mapped_column(String(128), nullable=True)
     tested_at: Mapped[datetime] = mapped_column(DateTime, index=True)
     result: Mapped[str] = mapped_column(String(16), index=True)
