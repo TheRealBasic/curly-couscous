@@ -7,5 +7,6 @@
   <ItemGroup>
     <ProjectReference Include="..\XDockCertSync.Core\XDockCertSync.Core.csproj" />
       <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.4" />
+      <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
   </ItemGroup>
 </Project>

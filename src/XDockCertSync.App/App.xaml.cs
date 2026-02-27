@@ -23,6 +23,7 @@ public partial class App : Application
         var dataRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "XDockCertSync");
         var rawDataDirectory = Path.Combine(dataRoot, "data", "raw");
         var sqlitePath = Path.Combine(dataRoot, "data", "certificates.db");
+        var secretsDirectory = Path.Combine(dataRoot, "secrets");
         Directory.CreateDirectory(dataRoot);
 
         Log.Logger = new LoggerConfiguration()
@@ -37,6 +38,7 @@ public partial class App : Application
 
         var services = new ServiceCollection();
         services.AddSingleton(Log.Logger);
+        services.AddSingleton(new XDockClientOptions());
         services.AddSingleton<HttpClient>(_ => new HttpClient { BaseAddress = new Uri("http://localhost:5000/") });
         services.AddSingleton<IXDockClient, XDockManagerHttpClient>();
         services.AddSingleton<ICertificatePayloadParser, XDockJsonPayloadParser>();
@@ -49,6 +51,7 @@ public partial class App : Application
         services.AddSingleton<ICertificateExportService, CertificateExportService>();
         services.AddSingleton<ISettingsStore<SyncSettings>>(_ =>
             new JsonSettingsStore<SyncSettings>(Path.Combine(dataRoot, "settings.json")));
+        services.AddSingleton<ICredentialStore>(_ => new WindowsDpapiCredentialStore(secretsDirectory));
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<MainWindow>();
 
