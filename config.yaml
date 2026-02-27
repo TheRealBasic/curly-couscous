@@ -1,0 +1,9 @@
+db_path: "C:/GasDock/gasdock.db"
+import_folder: "C:/GasDock/Imports"
+sorted_folder: "C:/GasDock/Sorted"
+quarantine_folder: "C:/GasDock/Quarantine"
+logs_folder: "C:/GasDock/logs"
+host: "127.0.0.1"
+port: 8765
+stable_seconds: 1.0
+stable_checks: 3

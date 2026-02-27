@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Device {{ serial }}</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Device {{ serial }}</h1>
+    <a class="button" href="/">Back</a>
+  </header>
+
+  <section class="panel">
+    <h2>Latest</h2>
+    {% if device %}
+    <p>Type: {{ device.device_type or '-' }} | Last Tested: {{ device.last_tested_at or '-' }} | Result: <span class="{{ (device.last_result or 'UNKNOWN')|lower }}">{{ device.last_result or 'UNKNOWN' }}</span></p>
+    {% else %}
+    <p>Unknown device.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>Test History</h2>
+    <table>
+      <thead><tr><th>Tested At</th><th>Result</th><th>Device Type</th><th>Parse Status</th><th>File</th></tr></thead>
+      <tbody>
+      {% for t in tests %}
+        <tr>
+          <td>{{ t.tested_at }}</td>
+          <td class="{{ t.result|lower }}">{{ t.result }}</td>
+          <td>{{ t.device_type or '-' }}</td>
+          <td>{{ t.parse_status }}</td>
+          <td>{{ t.file_path }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</body>
+</html>

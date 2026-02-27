@@ -1,0 +1,24 @@
+:root {
+  --bg: #11151a;
+  --panel: #1b232d;
+  --text: #e6eef7;
+  --muted: #96a2b1;
+  --pass: #2ecc71;
+  --fail: #ff4d4f;
+  --unknown: #f1c40f;
+}
+body { background: var(--bg); color: var(--text); font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.button, button { background: #2a3440; color: var(--text); border: 1px solid #3f4d5d; padding: 8px 12px; text-decoration: none; border-radius: 6px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.card { background: var(--panel); border-radius: 8px; padding: 12px; }
+.card.danger p { color: var(--fail); font-weight: bold; }
+.panel { background: var(--panel); border-radius: 8px; padding: 12px; margin-bottom: 14px; }
+.filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+input, select { background: #0f141a; color: var(--text); border: 1px solid #3f4d5d; border-radius: 6px; padding: 8px; }
+table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
+th, td { border-bottom: 1px solid #2d3946; padding: 8px; text-align: left; }
+.pass { color: var(--pass); font-weight: bold; }
+.fail { color: var(--fail); font-weight: bold; }
+.unknown { color: var(--unknown); font-weight: bold; }
+a { color: #7db9ff; }
