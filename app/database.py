@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator, Optional
 
-from sqlalchemy import create_engine, func, select
+from sqlalchemy import create_engine, func, select, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.models import Base, Device, TestRecord
@@ -22,6 +22,16 @@ class Database:
 
     def create_tables(self) -> None:
         Base.metadata.create_all(self.engine)
+        self._ensure_tests_barcode_column()
+
+    def _ensure_tests_barcode_column(self) -> None:
+        """Add barcode column for older databases created before this field existed."""
+
+        with self.engine.begin() as connection:
+            columns = connection.execute(text("PRAGMA table_info(tests)")).fetchall()
+            if any(column[1] == "barcode" for column in columns):
+                return
+            connection.execute(text("ALTER TABLE tests ADD COLUMN barcode VARCHAR(128)"))
 
     def session(self) -> Iterator[Session]:
         """Yield DB session for dependency usage."""
@@ -36,6 +46,7 @@ class Database:
         result: str,
         file_path: str,
         device_type: Optional[str] = None,
+        barcode: Optional[str] = None,
         parse_status: str = "ok",
         parse_error: Optional[str] = None,
     ) -> TestRecord:
@@ -45,6 +56,7 @@ class Database:
             test = TestRecord(
                 serial=serial,
                 device_type=device_type,
+                barcode=barcode,
                 tested_at=tested_at,
                 result=result,
                 file_path=file_path,

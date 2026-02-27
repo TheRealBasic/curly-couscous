@@ -1,6 +1,7 @@
 pdfplumber
 watchdog
 fastapi
+python-multipart
 uvicorn
 sqlalchemy
 pydantic

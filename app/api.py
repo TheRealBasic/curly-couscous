@@ -7,8 +7,8 @@ import io
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Query, Request
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi import Depends, FastAPI, Form, Query, Request
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import and_, desc, func, select
@@ -79,15 +79,32 @@ def create_app(config: AppConfig, database: Database) -> FastAPI:
         )
 
     @app.get("/device/{serial}", response_class=HTMLResponse)
-    def device_detail(request: Request, serial: str, db: Session = Depends(get_db)) -> HTMLResponse:
+    def device_detail(
+        request: Request,
+        serial: str,
+        barcode_updated: str | None = Query(default=None),
+        db: Session = Depends(get_db),
+    ) -> HTMLResponse:
         device = db.get(Device, serial.upper())
         tests = db.scalars(
             select(TestRecord).where(TestRecord.serial == serial.upper()).order_by(desc(TestRecord.tested_at))
         ).all()
         return templates.TemplateResponse(
             "device.html",
-            {"request": request, "device": device, "tests": tests, "serial": serial.upper()},
+            {"request": request, "device": device, "tests": tests, "serial": serial.upper(), "barcode_updated": barcode_updated},
         )
+
+
+    @app.post("/test/{test_id}/barcode")
+    def update_test_barcode(test_id: int, serial: str = Form(...), barcode: str = Form(default=""), db: Session = Depends(get_db)) -> RedirectResponse:
+        test = db.get(TestRecord, test_id)
+        if test is None:
+            return RedirectResponse(url=f"/device/{serial.upper()}?barcode_updated=not_found", status_code=303)
+
+        cleaned_barcode = barcode.strip() or None
+        test.barcode = cleaned_barcode
+        db.commit()
+        return RedirectResponse(url=f"/device/{serial.upper()}?barcode_updated=ok", status_code=303)
 
     @app.get("/export.csv")
     def export_csv(
@@ -111,10 +128,10 @@ def create_app(config: AppConfig, database: Database) -> FastAPI:
 
         output = io.StringIO()
         writer = csv.writer(output)
-        writer.writerow(["id", "serial", "device_type", "tested_at", "result", "file_path", "imported_at", "parse_status", "parse_error"])
+        writer.writerow(["id", "serial", "barcode", "device_type", "tested_at", "result", "file_path", "imported_at", "parse_status", "parse_error"])
         for row in rows:
             writer.writerow(
-                [row.id, row.serial, row.device_type, row.tested_at, row.result, row.file_path, row.imported_at, row.parse_status, row.parse_error]
+                [row.id, row.serial, row.barcode, row.device_type, row.tested_at, row.result, row.file_path, row.imported_at, row.parse_status, row.parse_error]
             )
 
         output.seek(0)

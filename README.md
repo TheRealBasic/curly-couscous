@@ -17,6 +17,7 @@ Offline certificate ingestion and dashboard system for Dräger X-dock 6300 calib
 - Sends failed parses to `C:\GasDock\Quarantine` and records parse errors.
 - Hosts local FastAPI dashboard at `http://localhost:8765`.
 - CSV export and filtering.
+- Manual barcode entry per certificate from the device history page.
 - Fully offline and local-file only.
 
 ## Project Structure
