@@ -6,5 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\XDockCertSync.Core\XDockCertSync.Core.csproj" />
+      <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.4" />
   </ItemGroup>
 </Project>
