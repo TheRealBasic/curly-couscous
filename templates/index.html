@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GasDock Certificate Manager</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header>
+    <h1>GasDock Certificate Manager</h1>
+    <a class="button" href="/export.csv?serial={{ filters.serial }}&result={{ filters.result }}&date_from={{ filters.date_from }}&date_to={{ filters.date_to }}">Export CSV</a>
+  </header>
+
+  <section class="cards">
+    <div class="card"><h3>Total Devices</h3><p>{{ stats.total_devices }}</p></div>
+    <div class="card"><h3>Total Tests</h3><p>{{ stats.total_tests }}</p></div>
+    <div class="card danger"><h3>Failures (7 days)</h3><p>{{ failures_last_7_days }}</p></div>
+  </section>
+
+  <section class="panel">
+    <h2>Filters</h2>
+    <form method="get" class="filters">
+      <input type="text" name="serial" placeholder="Serial" value="{{ filters.serial }}" />
+      <select name="result">
+        <option value="">Any Result</option>
+        {% for value in ["PASS", "FAIL", "UNKNOWN"] %}
+          <option value="{{ value }}" {% if filters.result == value %}selected{% endif %}>{{ value }}</option>
+        {% endfor %}
+      </select>
+      <input type="date" name="date_from" value="{{ filters.date_from }}" />
+      <input type="date" name="date_to" value="{{ filters.date_to }}" />
+      <button type="submit">Apply</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Latest Status Per Device</h2>
+    <table>
+      <thead><tr><th>Serial</th><th>Device Type</th><th>Last Tested</th><th>Last Result</th></tr></thead>
+      <tbody>
+      {% for d in devices %}
+        <tr>
+          <td><a href="/device/{{ d.serial }}">{{ d.serial }}</a></td>
+          <td>{{ d.device_type or '-' }}</td>
+          <td>{{ d.last_tested_at or '-' }}</td>
+          <td class="{{ (d.last_result or 'UNKNOWN')|lower }}">{{ d.last_result or 'UNKNOWN' }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <h2>Recent Failures</h2>
+    <table>
+      <thead><tr><th>Serial</th><th>Device Type</th><th>Tested At</th><th>Result</th></tr></thead>
+      <tbody>
+      {% for t in recent_failures %}
+        <tr>
+          <td>{{ t.serial }}</td>
+          <td>{{ t.device_type or '-' }}</td>
+          <td>{{ t.tested_at }}</td>
+          <td class="fail">{{ t.result }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</body>
+</html>

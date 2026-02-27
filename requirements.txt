@@ -1,0 +1,10 @@
+pdfplumber
+watchdog
+fastapi
+uvicorn
+sqlalchemy
+pydantic
+jinja2
+python-dateutil
+pyyaml
+pytest
