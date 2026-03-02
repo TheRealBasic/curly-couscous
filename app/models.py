@@ -35,6 +35,8 @@ class Device(Base):
     __tablename__ = "devices"
 
     serial: Mapped[str] = mapped_column(String(64), primary_key=True)
+    barcode: Mapped[str | None] = mapped_column(String(128), index=True, nullable=True)
+    organization: Mapped[str | None] = mapped_column(String(32), index=True, nullable=True)
     device_type: Mapped[str | None] = mapped_column(String(128), nullable=True)
     last_tested_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     last_result: Mapped[str | None] = mapped_column(String(16), nullable=True)

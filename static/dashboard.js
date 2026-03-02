@@ -48,6 +48,8 @@
 
       row.innerHTML = `
         <td><a href="/device/${device.serial}">${device.serial}</a></td>
+        <td>${textOrDash(device.barcode)}</td>
+        <td>${textOrDash(device.organization)}</td>
         <td>${textOrDash(device.device_type)}</td>
         <td>${formatDate(device.last_tested_at)}</td>
         <td class="${result.toLowerCase()}">${result}</td>

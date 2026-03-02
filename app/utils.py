@@ -34,3 +34,27 @@ def wait_for_stable_file(path: Path, checks: int = 3, interval: float = 1.0) -> 
             stable_count = 0
             last_size = size
         time.sleep(interval)
+
+
+def normalize_barcode(value: str) -> str:
+    """Normalize barcode user input."""
+
+    return " ".join(value.strip().upper().split())
+
+
+def classify_organization(barcode: str | None) -> str | None:
+    """Classify barcode by customer organization."""
+
+    if not barcode:
+        return None
+
+    normalized = normalize_barcode(barcode)
+    compact = normalized.replace(" ", "")
+
+    if normalized.startswith("AR "):
+        return "AMBIPAR"
+
+    if compact.startswith(("MCA", "011", "012", "013")):
+        return "MCA"
+
+    return "OTHER"

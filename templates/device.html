@@ -19,6 +19,15 @@
     {% else %}
     <p>Unknown device.</p>
     {% endif %}
+
+    {% if device %}
+    <form method="get" action="/device/{{ serial }}/barcode" class="filters">
+      <label for="barcode">Barcode</label>
+      <input id="barcode" type="text" name="barcode" value="{{ device.barcode or "" }}" placeholder="AR 12345 or MCA1234" required />
+      <button type="submit">Save Barcode</button>
+    </form>
+    <p>Organization: {{ device.organization or "-" }}</p>
+    {% endif %}
   </section>
 
   <section class="panel">
