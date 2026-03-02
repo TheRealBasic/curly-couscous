@@ -63,13 +63,14 @@
 <section class="panel" id="recent-failures">
   <h2>Recent Failures</h2>
   <table>
-    <thead><tr><th class="col-serial">Serial</th><th>Barcode</th><th>Device Type</th><th class="col-date">Tested At</th><th class="col-result">Result</th></tr></thead>
+    <thead><tr><th class="col-serial">Serial</th><th>Barcode</th><th>Device Type</th><th>Fail Reason</th><th class="col-date">Tested At</th><th class="col-result">Result</th></tr></thead>
     <tbody id="recent-failures-table-body">
     {% for t in recent_failures %}
       <tr>
         <td class="col-serial">{{ t.serial }}</td>
         <td class="truncate" title="{{ t.barcode or '-' }}">{{ t.barcode or '-' }}</td>
         <td class="truncate" title="{{ t.device_type or '-' }}">{{ t.device_type or '-' }}</td>
+        <td class="truncate" title="{{ t.fail_reason or '-' }}">{{ t.fail_reason or '-' }}</td>
         <td class="col-date">{{ t.tested_at }}</td>
         <td class="col-result"><span class="status-chip status-chip--{{ (t.result or 'UNKNOWN')|lower }}">{{ t.result or 'UNKNOWN' }}</span></td>
       </tr>

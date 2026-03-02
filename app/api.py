@@ -172,6 +172,7 @@ def create_app(config: AppConfig, database: Database) -> FastAPI:
                     "serial": failure.serial,
                     "barcode": failure.barcode,
                     "device_type": failure.device_type,
+                    "fail_reason": failure.fail_reason,
                     "tested_at": failure.tested_at.isoformat() if failure.tested_at else None,
                     "result": failure.result,
                 }
@@ -259,10 +260,34 @@ def create_app(config: AppConfig, database: Database) -> FastAPI:
             csv_output = io.StringIO()
             if include_csv:
                 writer = csv.writer(csv_output)
-                writer.writerow(["id", "serial", "barcode", "device_type", "tested_at", "result", "file_path", "imported_at", "parse_status", "parse_error"])
+                writer.writerow([
+                    "id",
+                    "serial",
+                    "barcode",
+                    "device_type",
+                    "tested_at",
+                    "result",
+                    "fail_reason",
+                    "file_path",
+                    "imported_at",
+                    "parse_status",
+                    "parse_error",
+                ])
                 for row in export_rows:
                     writer.writerow(
-                        [row.id, row.serial, row.barcode, row.device_type, row.tested_at, row.result, row.file_path, row.imported_at, row.parse_status, row.parse_error]
+                        [
+                            row.id,
+                            row.serial,
+                            row.barcode,
+                            row.device_type,
+                            row.tested_at,
+                            row.result,
+                            row.fail_reason,
+                            row.file_path,
+                            row.imported_at,
+                            row.parse_status,
+                            row.parse_error,
+                        ]
                     )
                 zip_file.writestr("gasdock_report.csv", csv_output.getvalue())
 

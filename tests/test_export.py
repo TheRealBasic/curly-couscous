@@ -1,3 +1,5 @@
+import csv
+import io
 from datetime import datetime, timedelta
 from pathlib import Path
 from zipfile import ZipFile
@@ -91,3 +93,62 @@ def test_export_can_include_all_rows_and_skip_csv(tmp_path: Path) -> None:
         "FAIL/ARRJ3290_BC-OLD_FAIL.pdf",
         "PASS/ARRJ3290_BC-NEW_PASS.pdf",
     ]
+
+
+def test_export_csv_includes_fail_reason_column_and_value(tmp_path: Path) -> None:
+    db = Database(tmp_path / "test.db")
+    db.create_tables()
+
+    failed_cert = tmp_path / "failed.pdf"
+    failed_cert.write_text("failed")
+
+    db.add_test_record(
+        serial="ARRJ3290",
+        device_type="Dräger X-am 2500",
+        tested_at=datetime(2026, 2, 24, 10, 0, 0),
+        barcode="BC-OLD",
+        result="FAIL",
+        file_path=str(failed_cert),
+        fail_reason="Sensor drift",
+    )
+
+    app = create_app(AppConfig(), db)
+    client = TestClient(app)
+
+    response = client.get("/export.zip?latest_only=false&include_certificates=false")
+    assert response.status_code == 200
+
+    zip_path = tmp_path / "export.zip"
+    zip_path.write_bytes(response.content)
+    with ZipFile(zip_path) as zipped:
+        csv_content = zipped.read("gasdock_report.csv").decode("utf-8")
+
+    rows = list(csv.DictReader(io.StringIO(csv_content)))
+    assert rows
+    assert "fail_reason" in rows[0]
+    assert rows[0]["fail_reason"] == "Sensor drift"
+
+
+def test_dashboard_recent_failures_include_fail_reason(tmp_path: Path) -> None:
+    db = Database(tmp_path / "test.db")
+    db.create_tables()
+
+    db.add_test_record(
+        serial="ARRJ3290",
+        device_type="Dräger X-am 2500",
+        tested_at=datetime(2026, 2, 24, 10, 0, 0),
+        barcode="BC-OLD",
+        result="FAIL",
+        file_path="failed.pdf",
+        fail_reason="Pump fault",
+    )
+
+    app = create_app(AppConfig(), db)
+    client = TestClient(app)
+
+    response = client.get("/api/dashboard")
+    assert response.status_code == 200
+
+    payload = response.json()
+    assert payload["recent_failures"]
+    assert payload["recent_failures"][0]["fail_reason"] == "Pump fault"
