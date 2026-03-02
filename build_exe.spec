@@ -7,11 +7,18 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[('templates', 'templates'), ('static', 'static'), ('config.yaml', '.')],
-    hiddenimports=['uvicorn.logging', 'uvicorn.loops', 'uvicorn.protocols'],
+    hiddenimports=[
+        'uvicorn.logging',
+        'uvicorn.loops',
+        'uvicorn.protocols',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    # `websockets` is optional for this app and can break modulegraph analysis on
+    # older Python builds (for example 3.10.0). We do not serve websocket
+    # endpoints, so excluding it keeps the executable HTTP dashboard functional.
+    excludes=['websockets', 'uvicorn.protocols.websockets.websockets_impl'],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
