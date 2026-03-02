@@ -56,6 +56,41 @@ def export_archive_name(row: TestRecord, source_file: Path) -> str:
     return f"{row.result}/{serial_part}_{barcode_part}_{result_part}{source_file.suffix}"
 
 
+def apply_export_filters(
+    query,
+    serial: str | None,
+    result: str | None,
+    date_from: str | None,
+    date_to: str | None,
+    organization: str | None,
+):
+    """Apply shared export/report filters to a TestRecord query."""
+
+    if serial:
+        query = query.where(TestRecord.serial.contains(serial.upper()))
+    if result in {"PASS", "FAIL", "UNKNOWN"}:
+        query = query.where(TestRecord.result == result)
+    if date_from:
+        query = query.where(TestRecord.tested_at >= datetime.fromisoformat(date_from))
+    if date_to:
+        query = query.where(TestRecord.tested_at <= datetime.fromisoformat(date_to))
+    if organization in {"AMBIPAR", "MCA", "OTHER", "UNKNOWN"}:
+        if organization == "UNKNOWN":
+            query = query.where(TestRecord.barcode.is_(None))
+        elif organization == "AMBIPAR":
+            query = query.where(TestRecord.barcode.ilike("AR %"))
+        elif organization == "MCA":
+            query = query.where(
+                TestRecord.barcode.ilike("MCA%")
+                | TestRecord.barcode.ilike("011%")
+                | TestRecord.barcode.ilike("012%")
+                | TestRecord.barcode.ilike("013%")
+            )
+        elif organization == "OTHER":
+            query = query.where(TestRecord.barcode.is_not(None))
+    return query
+
+
 def create_app(config: AppConfig, database: Database) -> FastAPI:
     """Create and configure FastAPI application."""
 
@@ -269,29 +304,7 @@ def create_app(config: AppConfig, database: Database) -> FastAPI:
         include_certificates: bool = Query(default=True),
         db: Session = Depends(get_db),
     ) -> StreamingResponse:
-        query = select(TestRecord)
-        if serial:
-            query = query.where(TestRecord.serial.contains(serial.upper()))
-        if result in {"PASS", "FAIL", "UNKNOWN"}:
-            query = query.where(TestRecord.result == result)
-        if date_from:
-            query = query.where(TestRecord.tested_at >= datetime.fromisoformat(date_from))
-        if date_to:
-            query = query.where(TestRecord.tested_at <= datetime.fromisoformat(date_to))
-        if organization in {"AMBIPAR", "MCA", "OTHER", "UNKNOWN"}:
-            if organization == "UNKNOWN":
-                query = query.where(TestRecord.barcode.is_(None))
-            elif organization == "AMBIPAR":
-                query = query.where(TestRecord.barcode.ilike("AR %"))
-            elif organization == "MCA":
-                query = query.where(
-                    TestRecord.barcode.ilike("MCA%")
-                    | TestRecord.barcode.ilike("011%")
-                    | TestRecord.barcode.ilike("012%")
-                    | TestRecord.barcode.ilike("013%")
-                )
-            elif organization == "OTHER":
-                query = query.where(TestRecord.barcode.is_not(None))
+        query = apply_export_filters(select(TestRecord), serial, result, date_from, date_to, organization)
 
         filtered_rows = db.scalars(query.order_by(desc(TestRecord.tested_at), desc(TestRecord.id))).all()
         export_rows = latest_test_per_device(filtered_rows) if latest_only else filtered_rows
@@ -345,6 +358,35 @@ def create_app(config: AppConfig, database: Database) -> FastAPI:
             iter([zip_buffer.getvalue()]),
             media_type="application/zip",
             headers={"Content-Disposition": "attachment; filename=gasdock_export.zip"},
+        )
+
+    @app.get("/print-report", response_class=HTMLResponse)
+    def print_report(
+        request: Request,
+        serial: str | None = Query(default=None),
+        result: str | None = Query(default=None),
+        date_from: str | None = Query(default=None),
+        date_to: str | None = Query(default=None),
+        organization: str | None = Query(default=None),
+        latest_only: bool = Query(default=True),
+        include_csv: bool = Query(default=True),
+        include_certificates: bool = Query(default=True),
+        db: Session = Depends(get_db),
+    ) -> HTMLResponse:
+        query = apply_export_filters(select(TestRecord), serial, result, date_from, date_to, organization)
+
+        filtered_rows = db.scalars(query.order_by(desc(TestRecord.tested_at), desc(TestRecord.id))).all()
+        export_rows = latest_test_per_device(filtered_rows) if latest_only else filtered_rows
+
+        return templates.TemplateResponse(
+            "print_report.html",
+            {
+                "request": request,
+                "rows": export_rows,
+                "organization": organization or "ALL",
+                "include_csv": include_csv,
+                "include_certificates": include_certificates,
+            },
         )
 
     return app

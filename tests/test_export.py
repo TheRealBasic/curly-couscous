@@ -216,3 +216,27 @@ def test_import_folder_once_uses_selected_folder(tmp_path: Path) -> None:
     assert payload["failed"] == 1
     assert payload["total"] == 2
     assert sorted(app.state.certificate_handler.calls) == ["a.pdf", "b.pdf"]
+
+
+def test_print_report_renders_csv_columns_without_truncation(tmp_path: Path) -> None:
+    db = Database(tmp_path / "test.db")
+    db.create_tables()
+
+    db.add_test_record(
+        serial="ARRJ1234",
+        device_type="Dräger X-am 2500",
+        tested_at=datetime(2026, 2, 24, 10, 0, 0),
+        barcode="MCA12345678901234567890",
+        result="PASS",
+        file_path="/tmp/certificates/very/long/path/that/should/be/visible/in/print/layout/file.pdf",
+        fail_reason="",
+    )
+
+    app = create_app(AppConfig(), db)
+    client = TestClient(app)
+
+    response = client.get("/print-report?organization=MCA&latest_only=false&include_csv=true")
+    assert response.status_code == 200
+    assert "<th>Parse Error</th>" in response.text
+    assert "MCA12345678901234567890" in response.text
+    assert "very/long/path/that/should/be/visible" in response.text

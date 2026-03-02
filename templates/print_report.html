@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Printable Report</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 24px; color: #111; }
+      h1 { margin: 0 0 8px; }
+      p { margin: 0 0 12px; }
+      .meta { color: #444; margin-bottom: 16px; }
+      table { width: 100%; border-collapse: collapse; table-layout: auto; }
+      th, td { border: 1px solid #aaa; padding: 6px 8px; text-align: left; vertical-align: top; word-break: break-word; }
+      th { background: #f3f3f3; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      @media print {
+        @page { size: landscape; margin: 12mm; }
+        .no-print { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="no-print">
+      <button onclick="window.print()">Print</button>
+      <a href="/">Back</a>
+    </div>
+
+    <h1>Organization Report</h1>
+    <p class="meta">
+      Organization: <strong>{{ organization }}</strong> |
+      Rows: <strong>{{ rows|length }}</strong> |
+      Certificates included: <strong>{{ 'Yes' if include_certificates else 'No' }}</strong> |
+      CSV view included: <strong>{{ 'Yes' if include_csv else 'No' }}</strong>
+    </p>
+
+    {% if include_csv %}
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Serial</th>
+          <th>Barcode</th>
+          <th>Device Type</th>
+          <th>Tested At</th>
+          <th>Result</th>
+          <th>Fail Reason</th>
+          <th>File Path</th>
+          <th>Imported At</th>
+          <th>Parse Status</th>
+          <th>Parse Error</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td class="mono">{{ row.id }}</td>
+          <td class="mono">{{ row.serial }}</td>
+          <td>{{ row.barcode or '-' }}</td>
+          <td>{{ row.device_type or '-' }}</td>
+          <td>{{ row.tested_at or '-' }}</td>
+          <td>{{ row.result or '-' }}</td>
+          <td>{{ row.fail_reason or '-' }}</td>
+          <td class="mono">{{ row.file_path or '-' }}</td>
+          <td>{{ row.imported_at or '-' }}</td>
+          <td>{{ row.parse_status or '-' }}</td>
+          <td>{{ row.parse_error or '-' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p>CSV view was not requested. Enable "Include CSV report" to print tabular data.</p>
+    {% endif %}
+
+    {% if include_certificates %}
+    <h2>Certificates to Print</h2>
+    <p>Use the browser print dialog and select <em>Print background graphics</em> off and <em>Scale</em> fit to paper for best results.</p>
+    <ul>
+      {% for row in rows %}
+        {% if row.result in ['PASS', 'FAIL'] and row.file_path %}
+          <li class="mono">{{ row.serial }} — {{ row.file_path }}</li>
+        {% endif %}
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    <script>
+      window.addEventListener('load', () => {
+        setTimeout(() => window.print(), 150);
+      });
+    </script>
+  </body>
+</html>

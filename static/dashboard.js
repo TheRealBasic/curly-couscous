@@ -11,6 +11,10 @@
   const exportDialog = document.getElementById('export-dialog');
   const exportDialogForm = document.getElementById('export-dialog-form');
   const cancelExportButton = document.getElementById('cancel-export');
+  const openPrintDialogButton = document.getElementById('open-print-dialog');
+  const printDialog = document.getElementById('print-dialog');
+  const printDialogForm = document.getElementById('print-dialog-form');
+  const cancelPrintButton = document.getElementById('cancel-print');
   const openImportDialogButton = document.getElementById('open-import-dialog');
   const importDialog = document.getElementById('import-dialog');
   const importDialogForm = document.getElementById('import-dialog-form');
@@ -162,6 +166,30 @@
       }
       window.location.href = `/export.zip?${params.toString()}`;
       exportDialog.close();
+    });
+  }
+
+  if (openPrintDialogButton && printDialog && printDialogForm) {
+    openPrintDialogButton.addEventListener('click', () => printDialog.showModal());
+    if (cancelPrintButton) {
+      cancelPrintButton.addEventListener('click', () => printDialog.close());
+    }
+    printDialogForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const params = new URLSearchParams();
+      const formData = new FormData(printDialogForm);
+      for (const [key, value] of formData.entries()) {
+        if (value) params.set(key, String(value));
+      }
+      if (!formData.has('include_csv')) params.set('include_csv', 'false');
+      if (!formData.has('include_certificates')) params.set('include_certificates', 'false');
+      const organization = params.get('organization');
+      if (!organization) {
+        alert('Please choose an organization to print.');
+        return;
+      }
+      window.open(`/print-report?${params.toString()}`, '_blank', 'noopener');
+      printDialog.close();
     });
   }
 
