@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Query, Request
+from fastapi.responses import JSONResponse
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -31,15 +32,13 @@ def create_app(config: AppConfig, database: Database) -> FastAPI:
         with database._session_maker() as session:  # internal helper for FastAPI dependency
             yield session
 
-    @app.get("/", response_class=HTMLResponse)
-    def index(
-        request: Request,
-        serial: str | None = Query(default=None),
-        result: str | None = Query(default=None),
-        date_from: str | None = Query(default=None),
-        date_to: str | None = Query(default=None),
-        db: Session = Depends(get_db),
-    ) -> HTMLResponse:
+    def get_dashboard_data(
+        db: Session,
+        serial: str | None,
+        result: str | None,
+        date_from: str | None,
+        date_to: str | None,
+    ) -> dict:
         stats = database.stats()
 
         failures_last_7_days = db.scalar(
@@ -66,17 +65,73 @@ def create_app(config: AppConfig, database: Database) -> FastAPI:
             .limit(25)
         ).all()
 
+        return {
+            "stats": stats,
+            "failures_last_7_days": failures_last_7_days,
+            "devices": devices,
+            "recent_failures": recent_failures,
+            "filters": {
+                "serial": serial or "",
+                "result": result or "",
+                "date_from": date_from or "",
+                "date_to": date_to or "",
+            },
+        }
+
+    @app.get("/", response_class=HTMLResponse)
+    def index(
+        request: Request,
+        serial: str | None = Query(default=None),
+        result: str | None = Query(default=None),
+        date_from: str | None = Query(default=None),
+        date_to: str | None = Query(default=None),
+        db: Session = Depends(get_db),
+    ) -> HTMLResponse:
+        dashboard_data = get_dashboard_data(db, serial, result, date_from, date_to)
+
         return templates.TemplateResponse(
             "index.html",
             {
                 "request": request,
-                "stats": stats,
-                "failures_last_7_days": failures_last_7_days,
-                "devices": devices,
-                "recent_failures": recent_failures,
-                "filters": {"serial": serial or "", "result": result or "", "date_from": date_from or "", "date_to": date_to or ""},
+                **dashboard_data,
             },
         )
+
+    @app.get("/api/dashboard", response_class=JSONResponse)
+    def dashboard_api(
+        serial: str | None = Query(default=None),
+        result: str | None = Query(default=None),
+        date_from: str | None = Query(default=None),
+        date_to: str | None = Query(default=None),
+        db: Session = Depends(get_db),
+    ) -> dict:
+        dashboard_data = get_dashboard_data(db, serial, result, date_from, date_to)
+
+        return {
+            "stats": dashboard_data["stats"],
+            "failures_last_7_days": dashboard_data["failures_last_7_days"],
+            "filters": dashboard_data["filters"],
+            "devices": [
+                {
+                    "serial": device.serial,
+                    "device_type": device.device_type,
+                    "last_tested_at": device.last_tested_at.isoformat() if device.last_tested_at else None,
+                    "last_result": device.last_result,
+                }
+                for device in dashboard_data["devices"]
+            ],
+            "recent_failures": [
+                {
+                    "id": failure.id,
+                    "serial": failure.serial,
+                    "barcode": failure.barcode,
+                    "device_type": failure.device_type,
+                    "tested_at": failure.tested_at.isoformat() if failure.tested_at else None,
+                    "result": failure.result,
+                }
+                for failure in dashboard_data["recent_failures"]
+            ],
+        }
 
     @app.get("/device/{serial}", response_class=HTMLResponse)
     def device_detail(request: Request, serial: str, db: Session = Depends(get_db)) -> HTMLResponse:
