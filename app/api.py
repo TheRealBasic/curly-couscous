@@ -219,15 +219,14 @@ def create_app(config: AppConfig, database: Database) -> FastAPI:
 
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zip_file:
-            if include_csv:
-                csv_output = io.StringIO()
-                writer = csv.writer(csv_output)
-                writer.writerow(["id", "serial", "barcode", "device_type", "tested_at", "result", "file_path", "imported_at", "parse_status", "parse_error"])
-                for row in rows:
-                    writer.writerow(
-                        [row.id, row.serial, row.barcode, row.device_type, row.tested_at, row.result, row.file_path, row.imported_at, row.parse_status, row.parse_error]
-                    )
-                zip_file.writestr("gasdock_report.csv", csv_output.getvalue())
+            csv_output = io.StringIO()
+            writer = csv.writer(csv_output)
+            writer.writerow(["id", "serial", "barcode", "device_type", "tested_at", "result", "file_path", "imported_at", "parse_status", "parse_error"])
+            for row in rows:
+                writer.writerow(
+                    [row.id, row.serial, row.barcode, row.device_type, row.tested_at, row.result, row.file_path, row.imported_at, row.parse_status, row.parse_error]
+                )
+            zip_file.writestr("gasdock_report.csv", csv_output.getvalue())
 
             for row in rows:
                 file_path = Path(row.file_path)
