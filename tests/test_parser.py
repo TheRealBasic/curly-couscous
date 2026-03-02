@@ -68,3 +68,24 @@ Overall result Failed
 
     reason = parser._extract_span_calibration_fail_reason(text)
     assert reason is None
+
+
+def test_parse_certificate_span_failure_maps_expected_fail_reason(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    file_path = tmp_path / "20260224_10_52_38_8323918ARRJ3290_Calibration_EN.pdf"
+    file_path.write_text("dummy")
+
+    sample_text = """
+Results of span calibration
+ch4 O2 H2S CO
+Test result Failed Passed Passed Passed
+Overall result Failed
+"""
+    monkeypatch.setattr(
+        parser,
+        "parse_pdf_text",
+        lambda _: ("Dräger X-am 2500", "BC-12345", "FAIL", "Generic failure", sample_text),
+    )
+
+    parsed = parse_certificate(file_path)
+    assert parsed.result == "FAIL"
+    assert parsed.fail_reason == "Generic failure"

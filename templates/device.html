@@ -38,12 +38,13 @@
 <section class="panel">
   <h2>Test History</h2>
   <table>
-    <thead><tr><th class="col-date">Tested At</th><th class="col-result">Result</th><th>Barcode</th><th>Device Type</th><th>Parse Status</th><th>File</th></tr></thead>
+    <thead><tr><th class="col-date">Tested At</th><th class="col-result">Result</th><th>Fail Reason</th><th>Barcode</th><th>Device Type</th><th>Parse Status</th><th>File</th></tr></thead>
     <tbody>
     {% for t in tests %}
       <tr>
         <td class="col-date">{{ t.tested_at }}</td>
         <td class="col-result"><span class="status-chip status-chip--{{ (t.result or 'UNKNOWN')|lower }}">{{ t.result or 'UNKNOWN' }}</span></td>
+        <td class="truncate" title="{{ t.fail_reason or '-' }}">{{ t.fail_reason or '-' }}</td>
         <td class="truncate" title="{{ t.barcode or '-' }}">{{ t.barcode or '-' }}</td>
         <td class="truncate" title="{{ t.device_type or '-' }}">{{ t.device_type or '-' }}</td>
         <td class="truncate" title="{{ t.parse_status }}">{{ t.parse_status }}</td>

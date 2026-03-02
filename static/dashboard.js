@@ -74,6 +74,7 @@
         <td>${failure.serial}</td>
         <td>${textOrDash(failure.barcode)}</td>
         <td>${textOrDash(failure.device_type)}</td>
+        <td>${textOrDash(failure.fail_reason)}</td>
         <td>${formatDate(failure.tested_at)}</td>
         <td class="fail">${failure.result}</td>
       `;
