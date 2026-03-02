@@ -21,6 +21,12 @@ OVERALL_RESULT_PATTERN = re.compile(
 BARCODE_PATTERN = re.compile(r"^\s*Barcode\s*[:\-]?\s*(?P<value>.+?)\s*$", re.IGNORECASE | re.MULTILINE)
 FAIL_REASON_PATTERN = re.compile(r"^\s*Fail\s*reason\s*[:\-]?\s*(?P<value>.+?)\s*$", re.IGNORECASE | re.MULTILINE)
 SERIAL_FALLBACK_PATTERN = re.compile(r"\b([A-Z0-9]{8})\b")
+SPAN_SECTION_PATTERN = re.compile(
+    r"Results\s+of\s+span\s+calibration(?P<section>.*?)(?:\n\s*Overall\s*result|\Z)",
+    re.IGNORECASE | re.DOTALL,
+)
+SPAN_HEADER_PATTERN = re.compile(r"\b(?:ch4|o2|h2s|co)\b", re.IGNORECASE)
+FAILED_GAS_PATTERN = re.compile(r"\b(ch4|o2|h2s|co)\b[^\n]*?\bfailed\b", re.IGNORECASE)
 
 
 @dataclass(slots=True)
@@ -75,12 +81,34 @@ def parse_pdf_text(file_path: Path) -> tuple[str | None, str | None, str | None,
 
     fail_reason_match = FAIL_REASON_PATTERN.search(full_text)
     fail_reason = fail_reason_match.group("value").strip() if fail_reason_match else None
+    span_fail_reason = _extract_span_calibration_fail_reason(full_text)
+    if span_fail_reason:
+        fail_reason = span_fail_reason
     if result == "PASSED":
         result = "PASS"
     elif result == "FAILED":
         result = "FAIL"
 
     return device_type, barcode, result, fail_reason, full_text
+
+
+def _extract_span_calibration_fail_reason(full_text: str) -> str | None:
+    """Extract normalized fail reason from the span calibration results table."""
+
+    section_match = SPAN_SECTION_PATTERN.search(full_text)
+    if not section_match:
+        return None
+
+    section = section_match.group("section")
+    if not SPAN_HEADER_PATTERN.search(section) or "test result" not in section.lower():
+        return None
+
+    failed_gas_match = FAILED_GAS_PATTERN.search(section)
+    if not failed_gas_match:
+        return None
+
+    gas = failed_gas_match.group(1).upper()
+    return f"Span calibration failed for {gas}"
 
 
 def parse_certificate(file_path: Path) -> ParsedCertificate:
