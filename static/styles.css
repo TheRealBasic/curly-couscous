@@ -307,6 +307,15 @@ a {
   color: var(--accent-link);
 }
 
+.button-danger {
+  border-color: rgba(255, 77, 79, 0.6);
+  color: #ffc1c3;
+}
+
+.button-danger:hover {
+  background: rgba(255, 77, 79, 0.18);
+}
+
 small,
 .muted {
   color: var(--text-muted);

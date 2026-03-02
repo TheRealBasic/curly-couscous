@@ -23,8 +23,9 @@ def main() -> None:
     db = Database(config.db_path)
     db.create_tables()
 
-    observer = start_watcher(config, db)
+    observer, handler = start_watcher(config, db)
     app = create_app(config, db)
+    app.state.certificate_handler = handler
 
     stop_event = threading.Event()
 

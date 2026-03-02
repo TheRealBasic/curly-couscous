@@ -33,7 +33,7 @@ class CertificateHandler(FileSystemEventHandler):
             return
         self.process_file(path)
 
-    def process_file(self, path: Path) -> None:
+    def process_file(self, path: Path) -> bool:
         """Parse, persist, and sort a single PDF file."""
 
         try:
@@ -58,6 +58,7 @@ class CertificateHandler(FileSystemEventHandler):
                 fail_reason=parsed.fail_reason,
             )
             LOGGER.info("Processed certificate: %s -> %s", path, destination)
+            return True
         except (ParseError, Exception) as exc:
             quarantined = move_quarantine(path, self.config.quarantine_folder)
             self.database.add_test_record(
@@ -72,9 +73,10 @@ class CertificateHandler(FileSystemEventHandler):
                 fail_reason=None,
             )
             LOGGER.exception("Failed to process %s. Moved to quarantine: %s", path, quarantined)
+            return False
 
 
-def start_watcher(config: AppConfig, database: Database) -> Observer:
+def start_watcher(config: AppConfig, database: Database) -> tuple[Observer, CertificateHandler]:
     """Create and start watchdog observer."""
 
     config.import_folder.mkdir(parents=True, exist_ok=True)
@@ -83,4 +85,4 @@ def start_watcher(config: AppConfig, database: Database) -> Observer:
     observer.schedule(handler, str(config.import_folder), recursive=False)
     observer.start()
     LOGGER.info("Watching folder: %s", config.import_folder)
-    return observer
+    return observer, handler
