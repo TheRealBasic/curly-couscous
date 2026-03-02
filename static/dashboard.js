@@ -1,5 +1,7 @@
 (function dashboardPolling() {
-  const pollIntervalMs = 3000;
+  const defaultPollIntervalMs = 30000;
+  const pollIntervalOptions = new Set([10000, 30000, 60000]);
+  const liveUpdatesStorageKey = 'dashboard.liveUpdates.preferences';
   const filtersForm = document.getElementById('dashboard-filters');
   const totalDevicesValue = document.getElementById('total-devices-value');
   const totalTestsValue = document.getElementById('total-tests-value');
@@ -13,6 +15,8 @@
   const recentFailuresNextButton = document.getElementById('recent-failures-next-page');
   const recentFailuresPageIndicator = document.getElementById('recent-failures-page-indicator');
   const liveStatus = document.getElementById('dashboard-live-status');
+  const liveUpdatesEnabledInput = document.getElementById('live-updates-enabled');
+  const liveUpdatesIntervalSelect = document.getElementById('live-updates-interval');
   const filtersFeedback = document.getElementById('filters-feedback');
   const openExportDialogButton = document.getElementById('open-export-dialog');
   const exportDialog = document.getElementById('export-dialog');
@@ -36,6 +40,81 @@
   }
 
   const feedbackTimeouts = new Map();
+
+  const defaultLivePreferences = {
+    enabled: true,
+    intervalMs: defaultPollIntervalMs
+  };
+
+  function parseIntervalMs(value) {
+    const parsed = Number.parseInt(String(value), 10);
+    if (!Number.isFinite(parsed) || !pollIntervalOptions.has(parsed)) {
+      return defaultPollIntervalMs;
+    }
+    return parsed;
+  }
+
+  function readLivePreferences() {
+    try {
+      const raw = window.localStorage.getItem(liveUpdatesStorageKey);
+      if (!raw) return { ...defaultLivePreferences };
+      const parsed = JSON.parse(raw);
+      return {
+        enabled: typeof parsed.enabled === 'boolean' ? parsed.enabled : defaultLivePreferences.enabled,
+        intervalMs: parseIntervalMs(parsed.intervalMs)
+      };
+    } catch (_error) {
+      return { ...defaultLivePreferences };
+    }
+  }
+
+  function saveLivePreferences(preferences) {
+    try {
+      window.localStorage.setItem(liveUpdatesStorageKey, JSON.stringify(preferences));
+    } catch (_error) {
+      // Ignore storage failures in restricted browser modes.
+    }
+  }
+
+  let refreshTimerId = null;
+  const livePreferences = readLivePreferences();
+
+  function updateLiveStatus(lastUpdatedAt = null) {
+    if (!liveStatus) return;
+    const intervalSeconds = Math.floor(livePreferences.intervalMs / 1000);
+    const modeText = livePreferences.enabled ? `Updating every ${intervalSeconds}s` : 'Paused';
+    if (!lastUpdatedAt) {
+      liveStatus.textContent = modeText;
+      return;
+    }
+    liveStatus.textContent = `${modeText} · Last updated: ${lastUpdatedAt.toLocaleTimeString()}`;
+  }
+
+  function stopRefreshTimer() {
+    if (refreshTimerId !== null) {
+      window.clearInterval(refreshTimerId);
+      refreshTimerId = null;
+    }
+  }
+
+  function startRefreshTimer() {
+    stopRefreshTimer();
+    if (!livePreferences.enabled) return;
+    refreshTimerId = window.setInterval(() => {
+      refreshDashboard();
+    }, livePreferences.intervalMs);
+  }
+
+  function syncLiveControls() {
+    if (liveUpdatesEnabledInput) {
+      liveUpdatesEnabledInput.checked = livePreferences.enabled;
+    }
+    if (liveUpdatesIntervalSelect) {
+      liveUpdatesIntervalSelect.value = String(livePreferences.intervalMs);
+      liveUpdatesIntervalSelect.disabled = !livePreferences.enabled;
+    }
+  }
+
 
   function clearFeedback(feedbackEl) {
     if (!feedbackEl) return;
@@ -287,9 +366,9 @@
       failuresLast7DaysValue.textContent = String(payload.failures_last_7_days);
       updateDevices(payload.devices || [], payload.totals?.devices);
       updateRecentFailures(payload.recent_failures || [], payload.totals?.recent_failures);
-      liveStatus.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+      updateLiveStatus(new Date());
     } catch (_error) {
-      liveStatus.textContent = 'Live updates paused, retrying...';
+      updateLiveStatus();
     }
   }
 
@@ -366,9 +445,37 @@
     showFeedback(filtersFeedback, 'Filters applied.', 'success', 2500);
   });
 
-  setInterval(refreshDashboard, pollIntervalMs);
+  syncLiveControls();
+  updateLiveStatus();
+  startRefreshTimer();
   refreshDashboard();
   attachDismissHandlers();
+
+  if (liveUpdatesEnabledInput) {
+    liveUpdatesEnabledInput.addEventListener('change', () => {
+      livePreferences.enabled = liveUpdatesEnabledInput.checked;
+      saveLivePreferences(livePreferences);
+      syncLiveControls();
+      updateLiveStatus();
+      startRefreshTimer();
+      if (livePreferences.enabled) {
+        refreshDashboard();
+      }
+    });
+  }
+
+  if (liveUpdatesIntervalSelect) {
+    liveUpdatesIntervalSelect.addEventListener('change', () => {
+      livePreferences.intervalMs = parseIntervalMs(liveUpdatesIntervalSelect.value);
+      saveLivePreferences(livePreferences);
+      syncLiveControls();
+      updateLiveStatus();
+      startRefreshTimer();
+      if (livePreferences.enabled) {
+        refreshDashboard();
+      }
+    });
+  }
 
   if (openExportDialogButton && exportDialog && exportDialogForm) {
     openExportDialogButton.addEventListener('click', () => {
