@@ -13,23 +13,131 @@
   const recentFailuresNextButton = document.getElementById('recent-failures-next-page');
   const recentFailuresPageIndicator = document.getElementById('recent-failures-page-indicator');
   const liveStatus = document.getElementById('dashboard-live-status');
+  const filtersFeedback = document.getElementById('filters-feedback');
   const openExportDialogButton = document.getElementById('open-export-dialog');
   const exportDialog = document.getElementById('export-dialog');
   const exportDialogForm = document.getElementById('export-dialog-form');
+  const exportFeedback = document.getElementById('export-feedback');
   const cancelExportButton = document.getElementById('cancel-export');
   const openPrintDialogButton = document.getElementById('open-print-dialog');
   const printDialog = document.getElementById('print-dialog');
   const printDialogForm = document.getElementById('print-dialog-form');
+  const printFeedback = document.getElementById('print-feedback');
   const cancelPrintButton = document.getElementById('cancel-print');
   const openImportDialogButton = document.getElementById('open-import-dialog');
   const importDialog = document.getElementById('import-dialog');
   const importDialogForm = document.getElementById('import-dialog-form');
   const cancelImportButton = document.getElementById('cancel-import');
-  const importOnceStatus = document.getElementById('import-once-status');
+  const importOnceFeedback = document.getElementById('import-once-feedback');
   const exportNavLink = document.querySelector('.app-nav__item[href="/export.zip"]');
 
   if (!filtersForm || !latestStatusTableBody || !recentFailuresTableBody) {
     return;
+  }
+
+  const feedbackTimeouts = new Map();
+
+  function clearFeedback(feedbackEl) {
+    if (!feedbackEl) return;
+    const timeoutId = feedbackTimeouts.get(feedbackEl);
+    if (timeoutId) {
+      window.clearTimeout(timeoutId);
+      feedbackTimeouts.delete(feedbackEl);
+    }
+    const messageNode = feedbackEl.querySelector('.feedback-message');
+    if (messageNode) messageNode.textContent = '';
+    feedbackEl.hidden = true;
+  }
+
+  function showFeedback(feedbackEl, message, type = 'error', autoClearMs = 0) {
+    if (!feedbackEl) return;
+    const messageNode = feedbackEl.querySelector('.feedback-message');
+    if (messageNode) messageNode.textContent = message;
+    feedbackEl.dataset.state = type;
+    feedbackEl.hidden = false;
+
+    const existing = feedbackTimeouts.get(feedbackEl);
+    if (existing) window.clearTimeout(existing);
+    if (autoClearMs > 0) {
+      const timeoutId = window.setTimeout(() => {
+        clearFeedback(feedbackEl);
+      }, autoClearMs);
+      feedbackTimeouts.set(feedbackEl, timeoutId);
+    }
+  }
+
+  function attachDismissHandlers() {
+    for (const button of document.querySelectorAll('[data-feedback-dismiss]')) {
+      button.addEventListener('click', () => {
+        const targetId = button.getAttribute('data-feedback-dismiss');
+        clearFeedback(document.getElementById(targetId));
+      });
+    }
+  }
+
+  function clearFieldError(field) {
+    if (!field) return;
+    field.removeAttribute('aria-invalid');
+    const helperId = field.dataset.errorHelperId;
+    if (!helperId) return;
+    const helper = document.getElementById(helperId);
+    if (helper) {
+      helper.textContent = '';
+      helper.hidden = true;
+    }
+  }
+
+  function setFieldError(field, message) {
+    if (!field) return;
+    field.setAttribute('aria-invalid', 'true');
+
+    let helper = null;
+    const existingHelperId = field.dataset.errorHelperId;
+    if (existingHelperId) {
+      helper = document.getElementById(existingHelperId);
+    }
+    if (!helper) {
+      helper = document.createElement('p');
+      helper.className = 'muted';
+      helper.setAttribute('data-role', 'field-error');
+      helper.setAttribute('aria-live', 'polite');
+      helper.id = `${field.form?.id || 'form'}-${field.name || 'field'}-error`;
+      field.dataset.errorHelperId = helper.id;
+      field.insertAdjacentElement('afterend', helper);
+    }
+
+    helper.hidden = false;
+    helper.textContent = message;
+    field.setAttribute('aria-describedby', helper.id);
+  }
+
+  function clearFormErrors(form) {
+    if (!form) return;
+    for (const field of form.querySelectorAll('[aria-invalid="true"]')) {
+      clearFieldError(field);
+    }
+  }
+
+  function validateDateRange(form, startFieldName = 'date_from', endFieldName = 'date_to') {
+    const startField = form.elements.namedItem(startFieldName);
+    const endField = form.elements.namedItem(endFieldName);
+    clearFieldError(startField);
+    clearFieldError(endField);
+
+    const startValue = String(startField?.value || '').trim();
+    const endValue = String(endField?.value || '').trim();
+
+    if (!startValue || !endValue) return true;
+
+    const startDate = new Date(startValue);
+    const endDate = new Date(endValue);
+    if (startDate.getTime() > endDate.getTime()) {
+      setFieldError(startField, 'Start date must be on or before end date.');
+      setFieldError(endField, 'End date must be on or after start date.');
+      return false;
+    }
+
+    return true;
   }
 
   const paginationState = {
@@ -204,8 +312,9 @@
       await deleteTest(testId);
       paginationState.recentFailures.totalRows = Math.max(0, paginationState.recentFailures.totalRows - 1);
       await refreshDashboard();
+      showFeedback(filtersFeedback, 'Result deleted successfully.', 'success', 3000);
     } catch (_error) {
-      window.alert('Could not delete result.');
+      showFeedback(filtersFeedback, 'Could not delete result. Please retry.', 'error');
     }
   });
 
@@ -218,8 +327,9 @@
       await deleteDevice(serial);
       paginationState.latestStatus.totalRows = Math.max(0, paginationState.latestStatus.totalRows - 1);
       await refreshDashboard();
+      showFeedback(filtersFeedback, `Device ${serial} deleted successfully.`, 'success', 3000);
     } catch (_error) {
-      window.alert('Could not delete device.');
+      showFeedback(filtersFeedback, 'Could not delete device. Please retry.', 'error');
     }
   });
 
@@ -244,19 +354,33 @@
 
   filtersForm.addEventListener('submit', (event) => {
     event.preventDefault();
+    clearFormErrors(filtersForm);
+    clearFeedback(filtersFeedback);
+    if (!validateDateRange(filtersForm)) {
+      showFeedback(filtersFeedback, 'Please fix the date range before applying filters.', 'error');
+      return;
+    }
     paginationState.latestStatus.currentPage = 1;
     paginationState.recentFailures.currentPage = 1;
     refreshDashboard();
+    showFeedback(filtersFeedback, 'Filters applied.', 'success', 2500);
   });
 
   setInterval(refreshDashboard, pollIntervalMs);
   refreshDashboard();
+  attachDismissHandlers();
 
   if (openExportDialogButton && exportDialog && exportDialogForm) {
-    openExportDialogButton.addEventListener('click', () => exportDialog.showModal());
+    openExportDialogButton.addEventListener('click', () => {
+      clearFormErrors(exportDialogForm);
+      clearFeedback(exportFeedback);
+      exportDialog.showModal();
+    });
     if (exportNavLink) {
       exportNavLink.addEventListener('click', (event) => {
         event.preventDefault();
+        clearFormErrors(exportDialogForm);
+        clearFeedback(exportFeedback);
         exportDialog.showModal();
       });
     }
@@ -265,6 +389,14 @@
     }
     exportDialogForm.addEventListener('submit', (event) => {
       event.preventDefault();
+      clearFormErrors(exportDialogForm);
+      clearFeedback(exportFeedback);
+
+      if (!validateDateRange(exportDialogForm)) {
+        showFeedback(exportFeedback, 'Date range is invalid. Update dates and try again.', 'error');
+        return;
+      }
+
       const params = new URLSearchParams();
       const formData = new FormData(exportDialogForm);
       for (const [key, value] of formData.entries()) {
@@ -272,23 +404,33 @@
       }
       if (!formData.has('include_csv')) params.set('include_csv', 'false');
       if (!formData.has('include_certificates')) params.set('include_certificates', 'false');
+      const organizationField = exportDialogForm.elements.namedItem('organization');
       const organization = params.get('organization');
       if (!organization) {
-        alert('Please choose an organization to export.');
+        setFieldError(organizationField, 'Select an organization to export.');
+        showFeedback(exportFeedback, 'Please choose an organization to export.', 'error');
         return;
       }
+
+      showFeedback(exportFeedback, 'Starting ZIP export…', 'success', 2500);
       window.location.href = `/export.zip?${params.toString()}`;
       exportDialog.close();
     });
   }
 
   if (openPrintDialogButton && printDialog && printDialogForm) {
-    openPrintDialogButton.addEventListener('click', () => printDialog.showModal());
+    openPrintDialogButton.addEventListener('click', () => {
+      clearFormErrors(printDialogForm);
+      clearFeedback(printFeedback);
+      printDialog.showModal();
+    });
     if (cancelPrintButton) {
       cancelPrintButton.addEventListener('click', () => printDialog.close());
     }
     printDialogForm.addEventListener('submit', (event) => {
       event.preventDefault();
+      clearFormErrors(printDialogForm);
+      clearFeedback(printFeedback);
       const params = new URLSearchParams();
       const formData = new FormData(printDialogForm);
       for (const [key, value] of formData.entries()) {
@@ -296,11 +438,15 @@
       }
       if (!formData.has('include_csv')) params.set('include_csv', 'false');
       if (!formData.has('include_certificates')) params.set('include_certificates', 'false');
+      const organizationField = printDialogForm.elements.namedItem('organization');
       const organization = params.get('organization');
       if (!organization) {
-        alert('Please choose an organization to print.');
+        setFieldError(organizationField, 'Select an organization to print.');
+        showFeedback(printFeedback, 'Please choose an organization to print.', 'error');
         return;
       }
+
+      showFeedback(printFeedback, 'Opening print view…', 'success', 2500);
       window.open(`/print-report?${params.toString()}`, '_blank', 'noopener');
       printDialog.close();
     });
@@ -308,7 +454,8 @@
 
   if (openImportDialogButton && importDialog && importDialogForm) {
     openImportDialogButton.addEventListener('click', () => {
-      importOnceStatus.textContent = '';
+      clearFormErrors(importDialogForm);
+      clearFeedback(importOnceFeedback);
       importDialog.showModal();
     });
 
@@ -318,14 +465,18 @@
 
     importDialogForm.addEventListener('submit', async (event) => {
       event.preventDefault();
+      clearFormErrors(importDialogForm);
+      clearFeedback(importOnceFeedback);
       const formData = new FormData(importDialogForm);
+      const folderField = importDialogForm.elements.namedItem('folder_path');
       const folderPath = String(formData.get('folder_path') || '').trim();
       if (!folderPath) {
-        importOnceStatus.textContent = 'Please provide a folder path.';
+        setFieldError(folderField, 'Enter a folder path to import.');
+        showFeedback(importOnceFeedback, 'Please provide a folder path.', 'error');
         return;
       }
 
-      importOnceStatus.textContent = 'Importing...';
+      showFeedback(importOnceFeedback, 'Importing folder…', 'success');
       try {
         const response = await fetch(`/api/import-folder-once?folder_path=${encodeURIComponent(folderPath)}`, {
           method: 'POST'
@@ -334,10 +485,10 @@
         if (!response.ok) {
           throw new Error(payload.detail || 'Import failed');
         }
-        importOnceStatus.textContent = `Imported ${payload.processed}/${payload.total} files from ${payload.folder}. Failed: ${payload.failed}.`;
+        showFeedback(importOnceFeedback, `Imported ${payload.processed}/${payload.total} files from ${payload.folder}. Failed: ${payload.failed}.`, 'success', 5000);
         await refreshDashboard();
       } catch (error) {
-        importOnceStatus.textContent = `Import failed: ${error.message}`;
+        showFeedback(importOnceFeedback, `Import failed: ${error.message}`, 'error');
       }
     });
   }

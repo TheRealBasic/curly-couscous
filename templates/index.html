@@ -23,7 +23,7 @@
 
 <section class="panel">
   <h2>Filters</h2>
-  <form method="get" class="filters" id="dashboard-filters">
+  <form method="get" class="filters" id="dashboard-filters" novalidate>
     <input type="text" name="serial" placeholder="Serial" value="{{ filters.serial }}" />
     <select name="result">
       <option value="">Any Result</option>
@@ -41,6 +41,10 @@
     </select>
     <button type="submit">Apply</button>
   </form>
+  <div id="filters-feedback" class="muted" role="status" aria-live="polite" hidden>
+    <span class="feedback-message"></span>
+    <button type="button" class="button" data-feedback-dismiss="filters-feedback">Dismiss</button>
+  </div>
 </section>
 
 <section class="panel" id="latest-status">
@@ -94,7 +98,7 @@
 </section>
 
 <dialog id="export-dialog" class="export-dialog">
-  <form method="dialog" class="export-dialog__content" id="export-dialog-form">
+  <form method="dialog" class="export-dialog__content" id="export-dialog-form" novalidate>
     <h3>Export Options</h3>
     <p class="muted">Choose exactly what should be included in this export.</p>
 
@@ -148,6 +152,11 @@
       <input type="checkbox" name="include_certificates" checked /> Include certificate files
     </label>
 
+    <div id="export-feedback" class="muted" role="status" aria-live="polite" hidden>
+      <span class="feedback-message"></span>
+      <button type="button" class="button" data-feedback-dismiss="export-feedback">Dismiss</button>
+    </div>
+
     <div class="export-dialog__actions">
       <button type="button" class="button" id="cancel-export">Cancel</button>
       <button type="submit" class="button">Download ZIP</button>
@@ -155,7 +164,7 @@
   </form>
 </dialog>
 <dialog id="print-dialog" class="export-dialog">
-  <form method="dialog" class="export-dialog__content" id="print-dialog-form">
+  <form method="dialog" class="export-dialog__content" id="print-dialog-form" novalidate>
     <h3>Print Options</h3>
     <p class="muted">Print organization certificates and/or a full-width CSV-style table.</p>
 
@@ -194,6 +203,11 @@
       <input type="checkbox" name="include_certificates" checked /> Print certificate file list
     </label>
 
+    <div id="print-feedback" class="muted" role="status" aria-live="polite" hidden>
+      <span class="feedback-message"></span>
+      <button type="button" class="button" data-feedback-dismiss="print-feedback">Dismiss</button>
+    </div>
+
     <div class="export-dialog__actions">
       <button type="button" class="button" id="cancel-print">Cancel</button>
       <button type="submit" class="button">Open Print View</button>
@@ -201,14 +215,17 @@
   </form>
 </dialog>
 <dialog id="import-dialog" class="export-dialog">
-  <form method="dialog" class="export-dialog__content" id="import-dialog-form">
+  <form method="dialog" class="export-dialog__content" id="import-dialog-form" novalidate>
     <h3>Import Folder Once</h3>
     <p class="muted">Process all PDF files from a selected folder one time without changing the auto-watch folder.</p>
     <label>
       Folder path
       <input type="text" name="folder_path" placeholder="C:/GasDock/ManualImport" required />
     </label>
-    <p id="import-once-status" class="muted"></p>
+    <div id="import-once-feedback" class="muted" role="status" aria-live="polite" hidden>
+      <span class="feedback-message"></span>
+      <button type="button" class="button" data-feedback-dismiss="import-once-feedback">Dismiss</button>
+    </div>
     <div class="export-dialog__actions">
       <button type="button" class="button" id="cancel-import">Cancel</button>
       <button type="submit" class="button">Import Now</button>
