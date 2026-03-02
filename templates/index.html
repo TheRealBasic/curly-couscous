@@ -11,6 +11,7 @@
 {% block app_actions %}
 <button type="button" class="button" id="open-import-dialog">Import Folder Once</button>
 <button type="button" class="button" id="open-export-dialog">Export ZIP</button>
+<button type="button" class="button" id="open-print-dialog">Print</button>
 {% endblock %}
 
 {% block content %}
@@ -140,6 +141,52 @@
     <div class="export-dialog__actions">
       <button type="button" class="button" id="cancel-export">Cancel</button>
       <button type="submit" class="button">Download ZIP</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="print-dialog" class="export-dialog">
+  <form method="dialog" class="export-dialog__content" id="print-dialog-form">
+    <h3>Print Options</h3>
+    <p class="muted">Print organization certificates and/or a full-width CSV-style table.</p>
+
+    <label>
+      Organization
+      <select name="organization" required>
+        <option value="">Select organization…</option>
+        {% for value in ["AMBIPAR", "MCA", "OTHER", "UNKNOWN"] %}
+          <option value="{{ value }}" {% if filters.organization == value %}selected{% endif %}>{{ value }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>
+      Result
+      <select name="result">
+        <option value="">Any Result</option>
+        {% for value in ["PASS", "FAIL", "UNKNOWN"] %}
+          <option value="{{ value }}" {% if filters.result == value %}selected{% endif %}>{{ value }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>
+      Scope
+      <select name="latest_only">
+        <option value="true" selected>Latest test per device</option>
+        <option value="false">All matching tests</option>
+      </select>
+    </label>
+
+    <label class="checkbox-row">
+      <input type="checkbox" name="include_csv" checked /> Print CSV table
+    </label>
+    <label class="checkbox-row">
+      <input type="checkbox" name="include_certificates" checked /> Print certificate file list
+    </label>
+
+    <div class="export-dialog__actions">
+      <button type="button" class="button" id="cancel-print">Cancel</button>
+      <button type="submit" class="button">Open Print View</button>
     </div>
   </form>
 </dialog>
