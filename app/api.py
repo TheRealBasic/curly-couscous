@@ -116,7 +116,7 @@ def create_app(config: AppConfig, database: Database) -> FastAPI:
         organization: str | None = Query(default=None),
         db: Session = Depends(get_db),
     ) -> dict:
-        dashboard_data = get_dashboard_data(db, serial, result, date_from, date_to)
+        dashboard_data = get_dashboard_data(db, serial, result, date_from, date_to, organization)
 
         return {
             "stats": dashboard_data["stats"],
