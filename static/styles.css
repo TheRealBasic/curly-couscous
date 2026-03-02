@@ -200,16 +200,92 @@ table {
 th,
 td {
   border-bottom: 1px solid var(--border-subtle);
-  padding: var(--space-2);
+  padding: 10px var(--space-3);
   text-align: left;
+  vertical-align: middle;
 }
 
 th {
   color: var(--text-secondary);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #27313c;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 td {
   color: var(--text-primary);
+}
+
+tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+tbody tr:hover {
+  background: rgba(125, 185, 255, 0.14);
+}
+
+.col-serial {
+  min-width: 120px;
+  white-space: nowrap;
+}
+
+.col-date,
+.col-result,
+.col-number {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.col-date,
+.col-number {
+  text-align: right;
+}
+
+.col-result {
+  text-align: center;
+}
+
+.truncate {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.status-chip--pass {
+  color: #b4f7cf;
+  background: rgba(46, 204, 113, 0.2);
+  border-color: rgba(46, 204, 113, 0.45);
+}
+
+.status-chip--fail {
+  color: #ffc1c3;
+  background: rgba(255, 77, 79, 0.18);
+  border-color: rgba(255, 77, 79, 0.45);
+}
+
+.status-chip--unknown {
+  color: #ffe9a8;
+  background: rgba(241, 196, 15, 0.2);
+  border-color: rgba(241, 196, 15, 0.45);
 }
 
 .pass {
