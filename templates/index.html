@@ -44,16 +44,16 @@
 <section class="panel" id="latest-status">
   <h2>Latest Status Per Device</h2>
   <table>
-    <thead><tr><th>Serial</th><th>Barcode</th><th>Organization</th><th>Device Type</th><th>Last Tested</th><th>Last Result</th></tr></thead>
+    <thead><tr><th class="col-serial">Serial</th><th>Barcode</th><th>Organization</th><th>Device Type</th><th class="col-date">Last Tested</th><th class="col-result">Last Result</th></tr></thead>
     <tbody id="latest-status-table-body">
     {% for d in devices %}
       <tr>
-        <td><a href="/device/{{ d.serial }}">{{ d.serial }}</a></td>
-        <td>{{ d.barcode or '-' }}</td>
-        <td>{{ d.organization or '-' }}</td>
-        <td>{{ d.device_type or '-' }}</td>
-        <td>{{ d.last_tested_at or '-' }}</td>
-        <td class="{{ (d.last_result or 'UNKNOWN')|lower }}">{{ d.last_result or 'UNKNOWN' }}</td>
+        <td class="col-serial"><a href="/device/{{ d.serial }}">{{ d.serial }}</a></td>
+        <td class="truncate" title="{{ d.barcode or '-' }}">{{ d.barcode or '-' }}</td>
+        <td class="truncate" title="{{ d.organization or '-' }}">{{ d.organization or '-' }}</td>
+        <td class="truncate" title="{{ d.device_type or '-' }}">{{ d.device_type or '-' }}</td>
+        <td class="col-date">{{ d.last_tested_at or '-' }}</td>
+        <td class="col-result"><span class="status-chip status-chip--{{ (d.last_result or 'UNKNOWN')|lower }}">{{ d.last_result or 'UNKNOWN' }}</span></td>
       </tr>
     {% endfor %}
     </tbody>
@@ -63,15 +63,15 @@
 <section class="panel" id="recent-failures">
   <h2>Recent Failures</h2>
   <table>
-    <thead><tr><th>Serial</th><th>Barcode</th><th>Device Type</th><th>Tested At</th><th>Result</th></tr></thead>
+    <thead><tr><th class="col-serial">Serial</th><th>Barcode</th><th>Device Type</th><th class="col-date">Tested At</th><th class="col-result">Result</th></tr></thead>
     <tbody id="recent-failures-table-body">
     {% for t in recent_failures %}
       <tr>
-        <td>{{ t.serial }}</td>
-        <td>{{ t.barcode or '-' }}</td>
-        <td>{{ t.device_type or '-' }}</td>
-        <td>{{ t.tested_at }}</td>
-        <td class="fail">{{ t.result }}</td>
+        <td class="col-serial">{{ t.serial }}</td>
+        <td class="truncate" title="{{ t.barcode or '-' }}">{{ t.barcode or '-' }}</td>
+        <td class="truncate" title="{{ t.device_type or '-' }}">{{ t.device_type or '-' }}</td>
+        <td class="col-date">{{ t.tested_at }}</td>
+        <td class="col-result"><span class="status-chip status-chip--{{ (t.result or 'UNKNOWN')|lower }}">{{ t.result or 'UNKNOWN' }}</span></td>
       </tr>
     {% endfor %}
     </tbody>
