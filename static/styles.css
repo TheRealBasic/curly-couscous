@@ -228,6 +228,27 @@ tbody tr:hover {
   background: rgba(125, 185, 255, 0.14);
 }
 
+
+.table-pagination {
+  margin-top: var(--space-2);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.table-pagination__button {
+  padding: 4px var(--space-2);
+  font-size: 0.85rem;
+}
+
+.table-pagination__indicator {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  min-width: 92px;
+  text-align: center;
+}
+
 .col-serial {
   min-width: 120px;
   white-space: nowrap;

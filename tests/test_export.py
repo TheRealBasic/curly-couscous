@@ -152,6 +152,8 @@ def test_dashboard_recent_failures_include_fail_reason(tmp_path: Path) -> None:
     payload = response.json()
     assert payload["recent_failures"]
     assert payload["recent_failures"][0]["fail_reason"] == "Pump fault"
+    assert payload["totals"]["devices"] == 1
+    assert payload["totals"]["recent_failures"] == 1
 
 
 def test_api_can_delete_test_and_device(tmp_path: Path) -> None:
