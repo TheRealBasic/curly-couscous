@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import io
+import re
 import zipfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -20,6 +21,38 @@ from app.config import AppConfig
 from app.database import Database
 from app.models import Device, TestRecord
 from app.utils import classify_organization, normalize_barcode
+
+
+def _safe_filename_part(value: str | None, fallback: str) -> str:
+    """Return a filesystem-safe filename token."""
+
+    if value is None or not value.strip():
+        return fallback
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "_", value.strip())
+    return cleaned.strip("._") or fallback
+
+
+def latest_test_per_device(rows: list[TestRecord]) -> list[TestRecord]:
+    """Keep only the newest test row per serial."""
+
+    latest_rows_by_device: list[TestRecord] = []
+    seen_serials: set[str] = set()
+    for row in rows:
+        serial_key = row.serial.upper()
+        if serial_key in seen_serials:
+            continue
+        seen_serials.add(serial_key)
+        latest_rows_by_device.append(row)
+    return latest_rows_by_device
+
+
+def export_archive_name(row: TestRecord, source_file: Path) -> str:
+    """Build export archive filename from serial, barcode, and result."""
+
+    serial_part = _safe_filename_part(row.serial, "UNKNOWN_SERIAL")
+    barcode_part = _safe_filename_part(row.barcode, "NO_BARCODE")
+    result_part = _safe_filename_part(row.result, "UNKNOWN")
+    return f"{row.result}/{serial_part}_{barcode_part}_{result_part}{source_file.suffix}"
 
 
 def create_app(config: AppConfig, database: Database) -> FastAPI:
@@ -215,24 +248,25 @@ def create_app(config: AppConfig, database: Database) -> FastAPI:
             elif organization == "OTHER":
                 query = query.where(TestRecord.barcode.is_not(None))
 
-        rows = db.scalars(query.order_by(desc(TestRecord.tested_at))).all()
+        filtered_rows = db.scalars(query.order_by(desc(TestRecord.tested_at), desc(TestRecord.id))).all()
+        latest_rows_by_device = latest_test_per_device(filtered_rows)
 
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zip_file:
             csv_output = io.StringIO()
             writer = csv.writer(csv_output)
             writer.writerow(["id", "serial", "barcode", "device_type", "tested_at", "result", "file_path", "imported_at", "parse_status", "parse_error"])
-            for row in rows:
+            for row in latest_rows_by_device:
                 writer.writerow(
                     [row.id, row.serial, row.barcode, row.device_type, row.tested_at, row.result, row.file_path, row.imported_at, row.parse_status, row.parse_error]
                 )
             zip_file.writestr("gasdock_report.csv", csv_output.getvalue())
 
-            for row in rows:
+            for row in latest_rows_by_device:
                 file_path = Path(row.file_path)
                 if not file_path.exists() or row.result not in {"PASS", "FAIL"}:
                     continue
-                archive_name = f"{row.result}/{file_path.name}"
+                archive_name = export_archive_name(row, file_path)
                 zip_file.write(file_path, archive_name)
 
         zip_buffer.seek(0)
