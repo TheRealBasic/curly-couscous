@@ -13,14 +13,14 @@
   </header>
 
   <section class="cards">
-    <div class="card"><h3>Total Devices</h3><p>{{ stats.total_devices }}</p></div>
-    <div class="card"><h3>Total Tests</h3><p>{{ stats.total_tests }}</p></div>
-    <div class="card danger"><h3>Failures (7 days)</h3><p>{{ failures_last_7_days }}</p></div>
+    <div class="card" id="card-total-devices"><h3>Total Devices</h3><p id="total-devices-value">{{ stats.total_devices }}</p></div>
+    <div class="card" id="card-total-tests"><h3>Total Tests</h3><p id="total-tests-value">{{ stats.total_tests }}</p></div>
+    <div class="card danger" id="card-failures-7-days"><h3>Failures (7 days)</h3><p id="failures-last-7-days-value">{{ failures_last_7_days }}</p></div>
   </section>
 
   <section class="panel">
     <h2>Filters</h2>
-    <form method="get" class="filters">
+    <form method="get" class="filters" id="dashboard-filters">
       <input type="text" name="serial" placeholder="Serial" value="{{ filters.serial }}" />
       <select name="result">
         <option value="">Any Result</option>
@@ -32,13 +32,14 @@
       <input type="date" name="date_to" value="{{ filters.date_to }}" />
       <button type="submit">Apply</button>
     </form>
+    <p id="dashboard-live-status" aria-live="polite">Last updated: never</p>
   </section>
 
   <section class="panel">
     <h2>Latest Status Per Device</h2>
     <table>
       <thead><tr><th>Serial</th><th>Device Type</th><th>Last Tested</th><th>Last Result</th></tr></thead>
-      <tbody>
+      <tbody id="latest-status-table-body">
       {% for d in devices %}
         <tr>
           <td><a href="/device/{{ d.serial }}">{{ d.serial }}</a></td>
@@ -55,7 +56,7 @@
     <h2>Recent Failures</h2>
     <table>
       <thead><tr><th>Serial</th><th>Barcode</th><th>Device Type</th><th>Tested At</th><th>Result</th></tr></thead>
-      <tbody>
+      <tbody id="recent-failures-table-body">
       {% for t in recent_failures %}
         <tr>
           <td>{{ t.serial }}</td>
@@ -68,5 +69,6 @@
       </tbody>
     </table>
   </section>
+  <script src="/static/dashboard.js"></script>
 </body>
 </html>
