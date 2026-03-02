@@ -45,3 +45,26 @@ def test_parse_certificate_fail_reason(monkeypatch: pytest.MonkeyPatch, tmp_path
     parsed = parse_certificate(file_path)
     assert parsed.result == "FAIL"
     assert parsed.fail_reason == "Bump test expired"
+
+
+def test_extract_span_calibration_fail_reason_detects_failed_gas() -> None:
+    text = """
+Results of span calibration
+ch4 O2 H2S CO
+Test result Failed Passed Passed Passed
+Overall result Failed
+"""
+
+    reason = parser._extract_span_calibration_fail_reason(text)
+    assert reason == "Span calibration failed for CH4"
+
+
+def test_extract_span_calibration_fail_reason_requires_table_context() -> None:
+    text = """
+Results of span calibration
+Something unrelated Failed
+Overall result Failed
+"""
+
+    reason = parser._extract_span_calibration_fail_reason(text)
+    assert reason is None
