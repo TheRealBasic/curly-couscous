@@ -74,11 +74,15 @@
 
     {% if include_certificates %}
     <h2>Certificates to Print</h2>
-    <p>Use the browser print dialog and select <em>Print background graphics</em> off and <em>Scale</em> fit to paper for best results.</p>
+    <p>Use <strong>Open PDFs</strong> to load each original certificate file in a new tab and print from the browser's PDF viewer.</p>
+    <p class="no-print">
+      <button type="button" id="open-certificate-pdfs">Open PDFs</button>
+    </p>
     <ul>
       {% for row in rows %}
         {% if row.result in ['PASS', 'FAIL'] and row.file_path %}
           <li class="mono">{{ row.serial }} — {{ row.file_path }}</li>
+          <input type="hidden" class="js-certificate-id" value="{{ row.id }}" />
         {% endif %}
       {% endfor %}
     </ul>
@@ -88,6 +92,16 @@
       window.addEventListener('load', () => {
         setTimeout(() => window.print(), 150);
       });
+
+      const openPdfButton = document.getElementById('open-certificate-pdfs');
+      if (openPdfButton) {
+        openPdfButton.addEventListener('click', () => {
+          const ids = [...document.querySelectorAll('.js-certificate-id')].map((el) => el.value).filter(Boolean);
+          for (const id of ids) {
+            window.open(`/print-certificate/${encodeURIComponent(id)}`, '_blank', 'noopener');
+          }
+        });
+      }
     </script>
   </body>
 </html>

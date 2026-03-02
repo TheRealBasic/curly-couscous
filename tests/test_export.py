@@ -240,3 +240,30 @@ def test_print_report_renders_csv_columns_without_truncation(tmp_path: Path) -> 
     assert "<th>Parse Error</th>" in response.text
     assert "MCA12345678901234567890" in response.text
     assert "very/long/path/that/should/be/visible" in response.text
+
+
+def test_print_certificate_returns_original_pdf(tmp_path: Path) -> None:
+    db = Database(tmp_path / "test.db")
+    db.create_tables()
+
+    certificate_path = tmp_path / "source.pdf"
+    certificate_bytes = b"%PDF-1.4\n%mock\n"
+    certificate_path.write_bytes(certificate_bytes)
+
+    row = db.add_test_record(
+        serial="ARRJ9999",
+        device_type="Drager",
+        tested_at=datetime(2026, 2, 25, 11, 0, 0),
+        barcode="MCA111111",
+        result="PASS",
+        file_path=str(certificate_path),
+        fail_reason="",
+    )
+
+    app = create_app(AppConfig(), db)
+    client = TestClient(app)
+
+    response = client.get(f"/print-certificate/{row.id}")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/pdf")
+    assert response.content == certificate_bytes

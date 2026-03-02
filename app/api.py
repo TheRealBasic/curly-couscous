@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -387,6 +387,27 @@ def create_app(config: AppConfig, database: Database) -> FastAPI:
                 "include_csv": include_csv,
                 "include_certificates": include_certificates,
             },
+        )
+
+    @app.get("/print-certificate/{test_id}")
+    def print_certificate(test_id: int, db: Session = Depends(get_db)) -> FileResponse:
+        """Return a single certificate PDF so users can print the original file."""
+
+        row = db.get(TestRecord, test_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Certificate not found")
+        if row.result not in {"PASS", "FAIL"}:
+            raise HTTPException(status_code=400, detail="Only PASS/FAIL certificates can be printed")
+
+        file_path = Path(row.file_path)
+        if not file_path.exists() or not file_path.is_file():
+            raise HTTPException(status_code=404, detail="Certificate file is missing")
+
+        return FileResponse(
+            path=file_path,
+            media_type="application/pdf",
+            filename=file_path.name,
+            headers={"Content-Disposition": f'inline; filename="{file_path.name}"'},
         )
 
     return app
