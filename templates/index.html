@@ -5,7 +5,21 @@
 {% block nav_dashboard_class %}is-active{% endblock %}
 
 {% block quick_status %}
-<p id="dashboard-live-status" aria-live="polite">Last updated: never</p>
+<div class="live-updates-controls" aria-label="Live update controls">
+  <p id="dashboard-live-status" aria-live="polite">Updating every 30s</p>
+  <label>
+    <input type="checkbox" id="live-updates-enabled" checked />
+    Live updates
+  </label>
+  <label>
+    Interval
+    <select id="live-updates-interval">
+      <option value="10000">10s</option>
+      <option value="30000" selected>30s</option>
+      <option value="60000">60s</option>
+    </select>
+  </label>
+</div>
 {% endblock %}
 
 {% block app_actions %}
