@@ -25,6 +25,7 @@ class Database:
     def create_tables(self) -> None:
         Base.metadata.create_all(self.engine)
         self._ensure_tests_barcode_column()
+        self._ensure_tests_fail_reason_column()
         self._ensure_devices_barcode_column()
         self._ensure_devices_organization_column()
 
@@ -36,6 +37,16 @@ class Database:
             if any(column[1] == "barcode" for column in columns):
                 return
             connection.execute(text("ALTER TABLE tests ADD COLUMN barcode VARCHAR(128)"))
+
+
+    def _ensure_tests_fail_reason_column(self) -> None:
+        """Add fail_reason column for older databases created before this field existed."""
+
+        with self.engine.begin() as connection:
+            columns = connection.execute(text("PRAGMA table_info(tests)")).fetchall()
+            if any(column[1] == "fail_reason" for column in columns):
+                return
+            connection.execute(text("ALTER TABLE tests ADD COLUMN fail_reason TEXT"))
 
     def _ensure_devices_barcode_column(self) -> None:
         """Add barcode column to devices table for older databases."""
@@ -71,6 +82,7 @@ class Database:
         barcode: Optional[str] = None,
         parse_status: str = "ok",
         parse_error: Optional[str] = None,
+        fail_reason: Optional[str] = None,
     ) -> TestRecord:
         """Insert test and update device latest snapshot."""
 
@@ -84,6 +96,7 @@ class Database:
                 file_path=file_path,
                 parse_status=parse_status,
                 parse_error=parse_error,
+                fail_reason=fail_reason,
             )
             session.add(test)
 

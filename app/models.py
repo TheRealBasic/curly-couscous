@@ -27,6 +27,7 @@ class TestRecord(Base):
     imported_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     parse_status: Mapped[str] = mapped_column(String(16), default="ok")
     parse_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    fail_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class Device(Base):

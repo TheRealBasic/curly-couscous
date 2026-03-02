@@ -55,6 +55,7 @@ class CertificateHandler(FileSystemEventHandler):
                 result=parsed.result,
                 file_path=str(destination),
                 parse_status="ok",
+                fail_reason=parsed.fail_reason,
             )
             LOGGER.info("Processed certificate: %s -> %s", path, destination)
         except (ParseError, Exception) as exc:
@@ -68,6 +69,7 @@ class CertificateHandler(FileSystemEventHandler):
                 file_path=str(quarantined),
                 parse_status="parse_error",
                 parse_error=str(exc),
+                fail_reason=None,
             )
             LOGGER.exception("Failed to process %s. Moved to quarantine: %s", path, quarantined)
 
