@@ -23,6 +23,8 @@ def test_add_record_updates_device(tmp_path: Path) -> None:
         assert device is not None
         assert device.last_result == "PASS"
         assert device.device_type == "Dräger X-am 2500"
+        assert device.barcode == "BC-12345"
+        assert device.organization == "OTHER"
         test = session.query(DbTestRecord).one()
         assert test.barcode == "BC-12345"
 

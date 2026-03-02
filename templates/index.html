@@ -9,7 +9,7 @@
 <body>
   <header>
     <h1>GasDock Certificate Manager</h1>
-    <a class="button" href="/export.csv?serial={{ filters.serial }}&result={{ filters.result }}&date_from={{ filters.date_from }}&date_to={{ filters.date_to }}">Export CSV</a>
+    <a class="button" href="/export.zip?serial={{ filters.serial }}&result={{ filters.result }}&date_from={{ filters.date_from }}&date_to={{ filters.date_to }}&organization={{ filters.organization }}">Export CSV</a>
   </header>
 
   <section class="cards">
@@ -30,6 +30,12 @@
       </select>
       <input type="date" name="date_from" value="{{ filters.date_from }}" />
       <input type="date" name="date_to" value="{{ filters.date_to }}" />
+      <select name="organization">
+        <option value="">All Organizations</option>
+        {% for value in ["AMBIPAR", "MCA", "OTHER", "UNKNOWN"] %}
+          <option value="{{ value }}" {% if filters.organization == value %}selected{% endif %}>{{ value }}</option>
+        {% endfor %}
+      </select>
       <button type="submit">Apply</button>
     </form>
     <p id="dashboard-live-status" aria-live="polite">Last updated: never</p>
@@ -38,11 +44,13 @@
   <section class="panel">
     <h2>Latest Status Per Device</h2>
     <table>
-      <thead><tr><th>Serial</th><th>Device Type</th><th>Last Tested</th><th>Last Result</th></tr></thead>
+      <thead><tr><th>Serial</th><th>Barcode</th><th>Organization</th><th>Device Type</th><th>Last Tested</th><th>Last Result</th></tr></thead>
       <tbody id="latest-status-table-body">
       {% for d in devices %}
         <tr>
           <td><a href="/device/{{ d.serial }}">{{ d.serial }}</a></td>
+          <td>{{ d.barcode or '-' }}</td>
+          <td>{{ d.organization or '-' }}</td>
           <td>{{ d.device_type or '-' }}</td>
           <td>{{ d.last_tested_at or '-' }}</td>
           <td class="{{ (d.last_result or 'UNKNOWN')|lower }}">{{ d.last_result or 'UNKNOWN' }}</td>

@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator, Optional
 
+from app.utils import classify_organization
+
 from sqlalchemy import create_engine, func, select, text
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -23,6 +25,8 @@ class Database:
     def create_tables(self) -> None:
         Base.metadata.create_all(self.engine)
         self._ensure_tests_barcode_column()
+        self._ensure_devices_barcode_column()
+        self._ensure_devices_organization_column()
 
     def _ensure_tests_barcode_column(self) -> None:
         """Add barcode column for older databases created before this field existed."""
@@ -32,6 +36,24 @@ class Database:
             if any(column[1] == "barcode" for column in columns):
                 return
             connection.execute(text("ALTER TABLE tests ADD COLUMN barcode VARCHAR(128)"))
+
+    def _ensure_devices_barcode_column(self) -> None:
+        """Add barcode column to devices table for older databases."""
+
+        with self.engine.begin() as connection:
+            columns = connection.execute(text("PRAGMA table_info(devices)")).fetchall()
+            if any(column[1] == "barcode" for column in columns):
+                return
+            connection.execute(text("ALTER TABLE devices ADD COLUMN barcode VARCHAR(128)"))
+
+    def _ensure_devices_organization_column(self) -> None:
+        """Add organization column to devices table for older databases."""
+
+        with self.engine.begin() as connection:
+            columns = connection.execute(text("PRAGMA table_info(devices)")).fetchall()
+            if any(column[1] == "organization" for column in columns):
+                return
+            connection.execute(text("ALTER TABLE devices ADD COLUMN organization VARCHAR(32)"))
 
     def session(self) -> Iterator[Session]:
         """Yield DB session for dependency usage."""
@@ -69,6 +91,10 @@ class Database:
             if device is None:
                 device = Device(serial=serial)
                 session.add(device)
+
+            if barcode:
+                device.barcode = barcode
+                device.organization = classify_organization(barcode)
 
             if device.last_tested_at is None or tested_at >= device.last_tested_at:
                 device.last_tested_at = tested_at
