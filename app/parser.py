@@ -103,12 +103,28 @@ def _extract_span_calibration_fail_reason(full_text: str) -> str | None:
     if not SPAN_HEADER_PATTERN.search(section) or "test result" not in section.lower():
         return None
 
-    failed_gas_match = FAILED_GAS_PATTERN.search(section)
-    if not failed_gas_match:
-        return None
+    lines = [line.strip() for line in section.splitlines() if line.strip()]
+    lowered_lines = [line.lower() for line in lines]
 
-    gas = failed_gas_match.group(1).upper()
-    return f"Span calibration failed for {gas}"
+    try:
+        test_result_index = next(i for i, line in enumerate(lowered_lines) if line.startswith("test result"))
+    except StopIteration:
+        test_result_index = -1
+
+    if test_result_index > 0:
+        gas_tokens = re.findall(r"\b(ch4|o2|h2s|co)\b", lines[test_result_index - 1], re.IGNORECASE)
+        status_tokens = re.findall(r"\b(passed|failed)\b", lines[test_result_index], re.IGNORECASE)
+        if gas_tokens and len(gas_tokens) == len(status_tokens):
+            for gas, status in zip(gas_tokens, status_tokens):
+                if status.lower() == "failed":
+                    return f"Span calibration failed for {gas.upper()}"
+
+    failed_gas_match = FAILED_GAS_PATTERN.search(section)
+    if failed_gas_match:
+        gas = failed_gas_match.group(1).upper()
+        return f"Span calibration failed for {gas}"
+
+    return None
 
 
 def parse_certificate(file_path: Path) -> ParsedCertificate:
