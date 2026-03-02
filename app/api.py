@@ -222,6 +222,9 @@ def create_app(config: AppConfig, database: Database) -> FastAPI:
         date_from: str | None = Query(default=None),
         date_to: str | None = Query(default=None),
         organization: str | None = Query(default=None),
+        latest_only: bool = Query(default=True),
+        include_csv: bool = Query(default=True),
+        include_certificates: bool = Query(default=True),
         db: Session = Depends(get_db),
     ) -> StreamingResponse:
         query = select(TestRecord)
@@ -249,25 +252,27 @@ def create_app(config: AppConfig, database: Database) -> FastAPI:
                 query = query.where(TestRecord.barcode.is_not(None))
 
         filtered_rows = db.scalars(query.order_by(desc(TestRecord.tested_at), desc(TestRecord.id))).all()
-        latest_rows_by_device = latest_test_per_device(filtered_rows)
+        export_rows = latest_test_per_device(filtered_rows) if latest_only else filtered_rows
 
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zip_file:
             csv_output = io.StringIO()
-            writer = csv.writer(csv_output)
-            writer.writerow(["id", "serial", "barcode", "device_type", "tested_at", "result", "file_path", "imported_at", "parse_status", "parse_error"])
-            for row in latest_rows_by_device:
-                writer.writerow(
-                    [row.id, row.serial, row.barcode, row.device_type, row.tested_at, row.result, row.file_path, row.imported_at, row.parse_status, row.parse_error]
-                )
-            zip_file.writestr("gasdock_report.csv", csv_output.getvalue())
+            if include_csv:
+                writer = csv.writer(csv_output)
+                writer.writerow(["id", "serial", "barcode", "device_type", "tested_at", "result", "file_path", "imported_at", "parse_status", "parse_error"])
+                for row in export_rows:
+                    writer.writerow(
+                        [row.id, row.serial, row.barcode, row.device_type, row.tested_at, row.result, row.file_path, row.imported_at, row.parse_status, row.parse_error]
+                    )
+                zip_file.writestr("gasdock_report.csv", csv_output.getvalue())
 
-            for row in latest_rows_by_device:
-                file_path = Path(row.file_path)
-                if not file_path.exists() or row.result not in {"PASS", "FAIL"}:
-                    continue
-                archive_name = export_archive_name(row, file_path)
-                zip_file.write(file_path, archive_name)
+            if include_certificates:
+                for row in export_rows:
+                    file_path = Path(row.file_path)
+                    if not file_path.exists() or row.result not in {"PASS", "FAIL"}:
+                        continue
+                    archive_name = export_archive_name(row, file_path)
+                    zip_file.write(file_path, archive_name)
 
         zip_buffer.seek(0)
         return StreamingResponse(
