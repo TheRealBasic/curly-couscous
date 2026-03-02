@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block app_actions %}
-<a class="button" href="/export.zip?serial={{ filters.serial }}&result={{ filters.result }}&date_from={{ filters.date_from }}&date_to={{ filters.date_to }}&organization={{ filters.organization }}">Export ZIP</a>
+<button type="button" class="button" id="open-export-dialog">Export ZIP</button>
 {% endblock %}
 
 {% block content %}
@@ -77,6 +77,68 @@
     </tbody>
   </table>
 </section>
+
+<dialog id="export-dialog" class="export-dialog">
+  <form method="dialog" class="export-dialog__content" id="export-dialog-form">
+    <h3>Export Options</h3>
+    <p class="muted">Choose exactly what should be included in this export.</p>
+
+    <label>
+      Organization
+      <select name="organization" required>
+        <option value="">Select organization…</option>
+        {% for value in ["AMBIPAR", "MCA", "OTHER", "UNKNOWN"] %}
+          <option value="{{ value }}" {% if filters.organization == value %}selected{% endif %}>{{ value }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>
+      Result
+      <select name="result">
+        <option value="">Any Result</option>
+        {% for value in ["PASS", "FAIL", "UNKNOWN"] %}
+          <option value="{{ value }}" {% if filters.result == value %}selected{% endif %}>{{ value }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>
+      Serial contains
+      <input type="text" name="serial" value="{{ filters.serial }}" placeholder="e.g. ARRJ" />
+    </label>
+
+    <label>
+      Date from
+      <input type="date" name="date_from" value="{{ filters.date_from }}" />
+    </label>
+
+    <label>
+      Date to
+      <input type="date" name="date_to" value="{{ filters.date_to }}" />
+    </label>
+
+    <label>
+      Scope
+      <select name="latest_only">
+        <option value="true" selected>Latest test per device</option>
+        <option value="false">All matching tests</option>
+      </select>
+    </label>
+
+    <label class="checkbox-row">
+      <input type="checkbox" name="include_csv" checked /> Include CSV report
+    </label>
+    <label class="checkbox-row">
+      <input type="checkbox" name="include_certificates" checked /> Include certificate files
+    </label>
+
+    <div class="export-dialog__actions">
+      <button type="button" class="button" id="cancel-export">Cancel</button>
+      <button type="submit" class="button">Download ZIP</button>
+    </div>
+  </form>
+</dialog>
 {% endblock %}
 
 {% block scripts %}

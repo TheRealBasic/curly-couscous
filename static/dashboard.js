@@ -7,6 +7,11 @@
   const latestStatusTableBody = document.getElementById('latest-status-table-body');
   const recentFailuresTableBody = document.getElementById('recent-failures-table-body');
   const liveStatus = document.getElementById('dashboard-live-status');
+  const openExportDialogButton = document.getElementById('open-export-dialog');
+  const exportDialog = document.getElementById('export-dialog');
+  const exportDialogForm = document.getElementById('export-dialog-form');
+  const cancelExportButton = document.getElementById('cancel-export');
+  const exportNavLink = document.querySelector('.app-nav__item[href="/export.zip"]');
 
   if (!filtersForm || !latestStatusTableBody || !recentFailuresTableBody) {
     return;
@@ -103,4 +108,52 @@
 
   setInterval(refreshDashboard, pollIntervalMs);
   refreshDashboard();
+
+  if (openExportDialogButton && exportDialog && exportDialogForm) {
+    openExportDialogButton.addEventListener('click', () => {
+      exportDialog.showModal();
+    });
+
+    if (exportNavLink) {
+      exportNavLink.addEventListener('click', (event) => {
+        event.preventDefault();
+        exportDialog.showModal();
+      });
+    }
+
+    if (cancelExportButton) {
+      cancelExportButton.addEventListener('click', () => {
+        exportDialog.close();
+      });
+    }
+
+    exportDialogForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+
+      const params = new URLSearchParams();
+      const formData = new FormData(exportDialogForm);
+
+      for (const [key, value] of formData.entries()) {
+        if (value) {
+          params.set(key, String(value));
+        }
+      }
+
+      if (!formData.has('include_csv')) {
+        params.set('include_csv', 'false');
+      }
+      if (!formData.has('include_certificates')) {
+        params.set('include_certificates', 'false');
+      }
+
+      const organization = params.get('organization');
+      if (!organization) {
+        alert('Please choose an organization to export.');
+        return;
+      }
+
+      window.location.href = `/export.zip?${params.toString()}`;
+      exportDialog.close();
+    });
+  }
 })();
