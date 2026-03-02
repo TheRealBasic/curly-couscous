@@ -63,3 +63,52 @@ def test_add_record_persists_fail_reason(tmp_path: Path) -> None:
     with db._session_maker() as session:
         test = session.query(DbTestRecord).filter_by(serial="FAIL0001").one()
         assert test.fail_reason == "Sensor out of range"
+
+
+def test_delete_test_record_updates_device_snapshot(tmp_path: Path) -> None:
+    db = Database(tmp_path / "test.db")
+    db.create_tables()
+
+    db.add_test_record(
+        serial="ARRJ3290",
+        device_type="X-am 2500",
+        tested_at=datetime(2026, 2, 24, 10, 0, 0),
+        barcode="BC-OLD",
+        result="FAIL",
+        file_path="old.pdf",
+    )
+    latest = db.add_test_record(
+        serial="ARRJ3290",
+        device_type="X-am 2500",
+        tested_at=datetime(2026, 2, 24, 11, 0, 0),
+        barcode="BC-NEW",
+        result="PASS",
+        file_path="new.pdf",
+    )
+
+    assert db.delete_test_record(latest.id) is True
+
+    with db._session_maker() as session:
+        device = session.get(Device, "ARRJ3290")
+        assert device is not None
+        assert device.last_result == "FAIL"
+
+
+def test_delete_device_removes_tests(tmp_path: Path) -> None:
+    db = Database(tmp_path / "test.db")
+    db.create_tables()
+
+    db.add_test_record(
+        serial="ARRJ3290",
+        device_type="X-am 2500",
+        tested_at=datetime(2026, 2, 24, 10, 0, 0),
+        barcode="BC-OLD",
+        result="FAIL",
+        file_path="old.pdf",
+    )
+
+    assert db.delete_device("arrj3290") is True
+
+    with db._session_maker() as session:
+        assert session.get(Device, "ARRJ3290") is None
+        assert session.query(DbTestRecord).filter_by(serial="ARRJ3290").count() == 0

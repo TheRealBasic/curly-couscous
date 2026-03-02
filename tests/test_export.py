@@ -152,3 +152,67 @@ def test_dashboard_recent_failures_include_fail_reason(tmp_path: Path) -> None:
     payload = response.json()
     assert payload["recent_failures"]
     assert payload["recent_failures"][0]["fail_reason"] == "Pump fault"
+
+
+def test_api_can_delete_test_and_device(tmp_path: Path) -> None:
+    db = Database(tmp_path / "test.db")
+    db.create_tables()
+
+    test = db.add_test_record(
+        serial="ARRJ3290",
+        device_type="X-am",
+        tested_at=datetime(2026, 2, 24, 10, 0, 0),
+        barcode="BC-1",
+        result="FAIL",
+        file_path="failed.pdf",
+    )
+
+    app = create_app(AppConfig(), db)
+    client = TestClient(app)
+
+    delete_test_response = client.delete(f"/api/tests/{test.id}")
+    assert delete_test_response.status_code == 200
+
+    db.add_test_record(
+        serial="ARRJ9999",
+        device_type="X-am",
+        tested_at=datetime(2026, 2, 24, 11, 0, 0),
+        barcode="BC-2",
+        result="PASS",
+        file_path="pass.pdf",
+    )
+    delete_device_response = client.delete("/api/devices/ARRJ9999")
+    assert delete_device_response.status_code == 200
+
+
+def test_import_folder_once_uses_selected_folder(tmp_path: Path) -> None:
+    db = Database(tmp_path / "test.db")
+    db.create_tables()
+
+    import_dir = tmp_path / "manual"
+    import_dir.mkdir()
+    first = import_dir / "a.pdf"
+    second = import_dir / "b.pdf"
+    first.write_text("one")
+    second.write_text("two")
+
+    class StubHandler:
+        def __init__(self) -> None:
+            self.calls = []
+
+        def process_file(self, path: Path) -> bool:
+            self.calls.append(path.name)
+            return path.name == "a.pdf"
+
+    app = create_app(AppConfig(), db)
+    app.state.certificate_handler = StubHandler()
+    client = TestClient(app)
+
+    response = client.post(f"/api/import-folder-once?folder_path={import_dir}")
+    assert response.status_code == 200
+
+    payload = response.json()
+    assert payload["processed"] == 1
+    assert payload["failed"] == 1
+    assert payload["total"] == 2
+    assert sorted(app.state.certificate_handler.calls) == ["a.pdf", "b.pdf"]

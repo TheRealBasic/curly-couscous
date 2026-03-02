@@ -9,7 +9,7 @@ import zipfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Query, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from app.config import AppConfig
 from app.database import Database
 from app.models import Device, TestRecord
+from app.watcher import CertificateHandler
 from app.utils import classify_organization, normalize_barcode
 
 
@@ -215,6 +216,46 @@ def create_app(config: AppConfig, database: Database) -> FastAPI:
             db.commit()
 
         return RedirectResponse(url=f"/device/{serial.upper()}", status_code=303)
+
+    @app.delete("/api/tests/{test_id}", response_class=JSONResponse)
+    def delete_test(test_id: int) -> dict:
+        deleted = database.delete_test_record(test_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Test record not found")
+        return {"ok": True}
+
+    @app.delete("/api/devices/{serial}", response_class=JSONResponse)
+    def delete_device(serial: str) -> dict:
+        deleted = database.delete_device(serial)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Device not found")
+        return {"ok": True}
+
+    @app.post("/api/import-folder-once", response_class=JSONResponse)
+    def import_folder_once(folder_path: str = Query(..., min_length=1)) -> dict:
+        candidate = Path(folder_path).expanduser()
+        if not candidate.exists() or not candidate.is_dir():
+            raise HTTPException(status_code=400, detail="Selected folder does not exist")
+
+        handler = getattr(app.state, "certificate_handler", None)
+        if handler is None:
+            handler = CertificateHandler(config, database)
+
+        processed = 0
+        failed = 0
+        for file_path in sorted(candidate.glob("*.pdf")):
+            if handler.process_file(file_path):
+                processed += 1
+            else:
+                failed += 1
+
+        return {
+            "ok": True,
+            "folder": str(candidate),
+            "processed": processed,
+            "failed": failed,
+            "total": processed + failed,
+        }
 
     @app.get("/export.zip")
     def export_zip(

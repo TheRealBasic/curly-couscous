@@ -119,6 +119,65 @@ class Database:
             session.refresh(test)
             return test
 
+    def delete_test_record(self, test_id: int) -> bool:
+        """Delete a single test record by id and refresh device snapshot."""
+
+        with self._session_maker() as session:
+            test = session.get(TestRecord, test_id)
+            if test is None:
+                return False
+
+            serial = test.serial
+            session.delete(test)
+            self._refresh_device_snapshot(session, serial)
+            session.commit()
+            return True
+
+    def delete_device(self, serial: str) -> bool:
+        """Delete a device and all related test records."""
+
+        serial_upper = serial.upper()
+        with self._session_maker() as session:
+            device = session.get(Device, serial_upper)
+            tests = session.query(TestRecord).filter(TestRecord.serial == serial_upper).all()
+            if device is None and not tests:
+                return False
+
+            for test in tests:
+                session.delete(test)
+            if device is not None:
+                session.delete(device)
+            session.commit()
+            return True
+
+    def _refresh_device_snapshot(self, session: Session, serial: str) -> None:
+        """Update device summary fields based on latest remaining test row."""
+
+        serial_upper = serial.upper()
+        latest = session.scalars(
+            select(TestRecord)
+            .where(TestRecord.serial == serial_upper)
+            .order_by(TestRecord.tested_at.desc(), TestRecord.id.desc())
+            .limit(1)
+        ).first()
+        device = session.get(Device, serial_upper)
+
+        if latest is None:
+            if device is not None:
+                session.delete(device)
+            return
+
+        if device is None:
+            device = Device(serial=serial_upper)
+            session.add(device)
+
+        device.last_tested_at = latest.tested_at
+        device.last_result = latest.result
+        device.device_type = latest.device_type
+        device.barcode = latest.barcode
+        device.organization = classify_organization(latest.barcode) if latest.barcode else None
+        device.last_updated = datetime.now(timezone.utc)
+
     def stats(self) -> dict[str, int]:
         """Return dashboard counters."""
 
