@@ -16,6 +16,7 @@ def test_add_record_updates_device(tmp_path: Path) -> None:
         barcode="BC-12345",
         result="PASS",
         file_path="C:/GasDock/Sorted/PASS/2026/02/24/ARRJ3290/cert.pdf",
+        fail_reason=None,
     )
 
     with db._session_maker() as session:
@@ -27,6 +28,7 @@ def test_add_record_updates_device(tmp_path: Path) -> None:
         assert device.organization == "OTHER"
         test = session.query(DbTestRecord).one()
         assert test.barcode == "BC-12345"
+        assert test.fail_reason is None
 
 
 def test_stats_counts(tmp_path: Path) -> None:
@@ -42,3 +44,22 @@ def test_stats_counts(tmp_path: Path) -> None:
     stats = db.stats()
     assert stats["total_devices"] == 1
     assert stats["total_tests"] == 1
+
+
+def test_add_record_persists_fail_reason(tmp_path: Path) -> None:
+    db = Database(tmp_path / "test.db")
+    db.create_tables()
+
+    db.add_test_record(
+        serial="FAIL0001",
+        device_type="X-am",
+        tested_at=datetime(2026, 2, 24, 11, 0, 0),
+        barcode="BC-FAIL",
+        result="FAIL",
+        file_path="file.pdf",
+        fail_reason="Sensor out of range",
+    )
+
+    with db._session_maker() as session:
+        test = session.query(DbTestRecord).filter_by(serial="FAIL0001").one()
+        assert test.fail_reason == "Sensor out of range"

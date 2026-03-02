@@ -22,10 +22,26 @@ def test_parse_certificate(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> N
     file_path = tmp_path / "20260224_10_52_38_8323918ARRJ3290_Calibration_EN.pdf"
     file_path.write_text("dummy")
 
-    monkeypatch.setattr(parser, "parse_pdf_text", lambda _: ("Dräger X-am 2500", "BC-12345", "PASS", "text"))
+    monkeypatch.setattr(parser, "parse_pdf_text", lambda _: ("Dräger X-am 2500", "BC-12345", "PASS", None, "text"))
 
     parsed = parse_certificate(file_path)
     assert parsed.serial == "ARRJ3290"
     assert parsed.result == "PASS"
     assert parsed.device_type == "Dräger X-am 2500"
     assert parsed.barcode == "BC-12345"
+    assert parsed.fail_reason is None
+
+
+def test_parse_certificate_fail_reason(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    file_path = tmp_path / "20260224_10_52_38_8323918ARRJ3290_Calibration_EN.pdf"
+    file_path.write_text("dummy")
+
+    monkeypatch.setattr(
+        parser,
+        "parse_pdf_text",
+        lambda _: ("Dräger X-am 2500", "BC-12345", "FAIL", "Bump test expired", "text"),
+    )
+
+    parsed = parse_certificate(file_path)
+    assert parsed.result == "FAIL"
+    assert parsed.fail_reason == "Bump test expired"
