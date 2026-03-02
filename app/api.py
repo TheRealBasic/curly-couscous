@@ -214,6 +214,10 @@ def create_app(config: AppConfig, database: Database) -> FastAPI:
                 }
                 for failure in dashboard_data["recent_failures"]
             ],
+            "totals": {
+                "devices": len(dashboard_data["devices"]),
+                "recent_failures": len(dashboard_data["recent_failures"]),
+            },
         }
 
     @app.get("/device/{serial}", response_class=HTMLResponse)

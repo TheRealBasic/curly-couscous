@@ -6,6 +6,12 @@
   const failuresLast7DaysValue = document.getElementById('failures-last-7-days-value');
   const latestStatusTableBody = document.getElementById('latest-status-table-body');
   const recentFailuresTableBody = document.getElementById('recent-failures-table-body');
+  const latestStatusPrevButton = document.getElementById('latest-status-prev-page');
+  const latestStatusNextButton = document.getElementById('latest-status-next-page');
+  const latestStatusPageIndicator = document.getElementById('latest-status-page-indicator');
+  const recentFailuresPrevButton = document.getElementById('recent-failures-prev-page');
+  const recentFailuresNextButton = document.getElementById('recent-failures-next-page');
+  const recentFailuresPageIndicator = document.getElementById('recent-failures-page-indicator');
   const liveStatus = document.getElementById('dashboard-live-status');
   const openExportDialogButton = document.getElementById('open-export-dialog');
   const exportDialog = document.getElementById('export-dialog');
@@ -24,6 +30,47 @@
 
   if (!filtersForm || !latestStatusTableBody || !recentFailuresTableBody) {
     return;
+  }
+
+  const paginationState = {
+    latestStatus: {
+      currentPage: 1,
+      pageSize: 10,
+      totalRows: 0
+    },
+    recentFailures: {
+      currentPage: 1,
+      pageSize: 10,
+      totalRows: 0
+    }
+  };
+
+  function getTotalPages(state) {
+    return Math.max(1, Math.ceil(state.totalRows / state.pageSize));
+  }
+
+  function getPageRows(items, state) {
+    const start = (state.currentPage - 1) * state.pageSize;
+    return items.slice(start, start + state.pageSize);
+  }
+
+  function updatePaginationControls(state, prevButton, nextButton, indicator) {
+    const totalPages = getTotalPages(state);
+    if (state.currentPage > totalPages) {
+      state.currentPage = totalPages;
+    }
+    if (state.currentPage < 1) {
+      state.currentPage = 1;
+    }
+    if (indicator) {
+      indicator.textContent = `Page ${state.currentPage} / ${totalPages}`;
+    }
+    if (prevButton) {
+      prevButton.disabled = state.currentPage <= 1;
+    }
+    if (nextButton) {
+      nextButton.disabled = state.currentPage >= totalPages;
+    }
   }
 
   function getQueryString() {
@@ -47,39 +94,77 @@
     return parsed.toLocaleString();
   }
 
-  function updateDevices(devices) {
-    latestStatusTableBody.innerHTML = '';
-    for (const device of devices) {
-      const row = document.createElement('tr');
-      const result = device.last_result || 'UNKNOWN';
-      row.innerHTML = `
-        <td><a href="/device/${device.serial}">${device.serial}</a></td>
-        <td>${textOrDash(device.barcode)}</td>
-        <td>${textOrDash(device.organization)}</td>
-        <td>${textOrDash(device.device_type)}</td>
-        <td>${formatDate(device.last_tested_at)}</td>
-        <td class="${result.toLowerCase()}">${result}</td>
-        <td><button type="button" class="button button-danger js-delete-device" data-serial="${device.serial}">Delete</button></td>
-      `;
-      latestStatusTableBody.appendChild(row);
+  function createCell(content, className) {
+    const cell = document.createElement('td');
+    if (className) {
+      cell.className = className;
     }
+    if (content instanceof Node) {
+      cell.appendChild(content);
+    } else {
+      cell.textContent = String(content);
+    }
+    return cell;
   }
 
-  function updateRecentFailures(failures) {
-    recentFailuresTableBody.innerHTML = '';
-    for (const failure of failures) {
+  function updateDevices(devices, totalRows) {
+    const state = paginationState.latestStatus;
+    state.totalRows = Number.isFinite(totalRows) ? totalRows : devices.length;
+    updatePaginationControls(state, latestStatusPrevButton, latestStatusNextButton, latestStatusPageIndicator);
+
+    latestStatusTableBody.replaceChildren();
+    const pageDevices = getPageRows(devices, state);
+    const fragment = document.createDocumentFragment();
+    for (const device of pageDevices) {
       const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${failure.serial}</td>
-        <td>${textOrDash(failure.barcode)}</td>
-        <td>${textOrDash(failure.device_type)}</td>
-        <td>${textOrDash(failure.fail_reason)}</td>
-        <td>${formatDate(failure.tested_at)}</td>
-        <td class="fail">${failure.result}</td>
-        <td><button type="button" class="button button-danger js-delete-test" data-test-id="${failure.id}">Delete</button></td>
-      `;
-      recentFailuresTableBody.appendChild(row);
+      const result = device.last_result || 'UNKNOWN';
+      const serialLink = document.createElement('a');
+      serialLink.href = `/device/${device.serial}`;
+      serialLink.textContent = device.serial;
+      row.appendChild(createCell(serialLink, 'col-serial'));
+      row.appendChild(createCell(textOrDash(device.barcode), 'truncate'));
+      row.appendChild(createCell(textOrDash(device.organization), 'truncate'));
+      row.appendChild(createCell(textOrDash(device.device_type), 'truncate'));
+      row.appendChild(createCell(formatDate(device.last_tested_at), 'col-date'));
+      row.appendChild(createCell(result, `col-result ${result.toLowerCase()}`));
+
+      const actionButton = document.createElement('button');
+      actionButton.type = 'button';
+      actionButton.className = 'button button-danger js-delete-device';
+      actionButton.dataset.serial = device.serial;
+      actionButton.textContent = 'Delete';
+      row.appendChild(createCell(actionButton));
+      fragment.appendChild(row);
     }
+    latestStatusTableBody.appendChild(fragment);
+  }
+
+  function updateRecentFailures(failures, totalRows) {
+    const state = paginationState.recentFailures;
+    state.totalRows = Number.isFinite(totalRows) ? totalRows : failures.length;
+    updatePaginationControls(state, recentFailuresPrevButton, recentFailuresNextButton, recentFailuresPageIndicator);
+
+    recentFailuresTableBody.replaceChildren();
+    const pageFailures = getPageRows(failures, state);
+    const fragment = document.createDocumentFragment();
+    for (const failure of pageFailures) {
+      const row = document.createElement('tr');
+      row.appendChild(createCell(failure.serial, 'col-serial'));
+      row.appendChild(createCell(textOrDash(failure.barcode), 'truncate'));
+      row.appendChild(createCell(textOrDash(failure.device_type), 'truncate'));
+      row.appendChild(createCell(textOrDash(failure.fail_reason), 'truncate'));
+      row.appendChild(createCell(formatDate(failure.tested_at), 'col-date'));
+      row.appendChild(createCell(failure.result, 'col-result fail'));
+
+      const actionButton = document.createElement('button');
+      actionButton.type = 'button';
+      actionButton.className = 'button button-danger js-delete-test';
+      actionButton.dataset.testId = String(failure.id);
+      actionButton.textContent = 'Delete';
+      row.appendChild(createCell(actionButton));
+      fragment.appendChild(row);
+    }
+    recentFailuresTableBody.appendChild(fragment);
   }
 
   async function refreshDashboard() {
@@ -92,8 +177,8 @@
       totalDevicesValue.textContent = String(payload.stats.total_devices);
       totalTestsValue.textContent = String(payload.stats.total_tests);
       failuresLast7DaysValue.textContent = String(payload.failures_last_7_days);
-      updateDevices(payload.devices || []);
-      updateRecentFailures(payload.recent_failures || []);
+      updateDevices(payload.devices || [], payload.totals?.devices);
+      updateRecentFailures(payload.recent_failures || [], payload.totals?.recent_failures);
       liveStatus.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
     } catch (_error) {
       liveStatus.textContent = 'Live updates paused, retrying...';
@@ -117,6 +202,7 @@
     if (!testId || !window.confirm('Delete this result?')) return;
     try {
       await deleteTest(testId);
+      paginationState.recentFailures.totalRows = Math.max(0, paginationState.recentFailures.totalRows - 1);
       await refreshDashboard();
     } catch (_error) {
       window.alert('Could not delete result.');
@@ -130,10 +216,37 @@
     if (!serial || !window.confirm(`Delete device ${serial} and all its results?`)) return;
     try {
       await deleteDevice(serial);
+      paginationState.latestStatus.totalRows = Math.max(0, paginationState.latestStatus.totalRows - 1);
       await refreshDashboard();
     } catch (_error) {
       window.alert('Could not delete device.');
     }
+  });
+
+  function changePage(tableName, offset) {
+    const state = paginationState[tableName];
+    state.currentPage = Math.min(getTotalPages(state), Math.max(1, state.currentPage + offset));
+    refreshDashboard();
+  }
+
+  if (latestStatusPrevButton) {
+    latestStatusPrevButton.addEventListener('click', () => changePage('latestStatus', -1));
+  }
+  if (latestStatusNextButton) {
+    latestStatusNextButton.addEventListener('click', () => changePage('latestStatus', 1));
+  }
+  if (recentFailuresPrevButton) {
+    recentFailuresPrevButton.addEventListener('click', () => changePage('recentFailures', -1));
+  }
+  if (recentFailuresNextButton) {
+    recentFailuresNextButton.addEventListener('click', () => changePage('recentFailures', 1));
+  }
+
+  filtersForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    paginationState.latestStatus.currentPage = 1;
+    paginationState.recentFailures.currentPage = 1;
+    refreshDashboard();
   });
 
   setInterval(refreshDashboard, pollIntervalMs);
