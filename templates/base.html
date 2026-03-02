@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}GasDock Certificate Manager{% endblock %}</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-bar">
+      <div class="app-bar__title-group">
+        <p class="app-bar__eyebrow">GasDock</p>
+        <h1>{% block app_title %}Certificate Manager{% endblock %}</h1>
+      </div>
+      <div class="app-bar__status">{% block quick_status %}<span class="muted">No live status</span>{% endblock %}</div>
+      <div class="app-bar__actions">{% block app_actions %}{% endblock %}</div>
+    </header>
+
+    <div class="app-body">
+      {% block side_nav %}
+      <aside class="app-nav" aria-label="Primary">
+        <a href="/" class="app-nav__item {% block nav_dashboard_class %}{% endblock %}">Dashboard</a>
+        <a href="/#latest-status" class="app-nav__item {% block nav_devices_class %}{% endblock %}">Devices</a>
+        <a href="/#recent-failures" class="app-nav__item {% block nav_failures_class %}{% endblock %}">Failures</a>
+        <a href="/export.zip" class="app-nav__item {% block nav_export_class %}{% endblock %}">Export</a>
+      </aside>
+      {% endblock %}
+
+      <main class="app-main">
+        <div class="content-container">
+          {% block content %}{% endblock %}
+        </div>
+      </main>
+    </div>
+  </div>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
