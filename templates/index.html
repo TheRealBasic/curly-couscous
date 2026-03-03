@@ -33,6 +33,13 @@
   <div class="card" id="card-total-devices"><h3>Total Devices</h3><p id="total-devices-value">{{ stats.total_devices }}</p></div>
   <div class="card" id="card-total-tests"><h3>Total Tests</h3><p id="total-tests-value">{{ stats.total_tests }}</p></div>
   <div class="card danger" id="card-failures-7-days"><h3>Failures (7 days)</h3><p id="failures-last-7-days-value">{{ failures_last_7_days }}</p></div>
+  <div class="card" id="card-pass-rate"><h3>Pass Rate (filtered)</h3><p id="pass-rate-value">-</p></div>
+  <div class="card" id="card-unknown-devices"><h3>Unknown Devices (filtered)</h3><p id="unknown-devices-value">-</p></div>
+</section>
+
+<section class="panel" id="organization-breakdown-panel">
+  <h2>Organization Breakdown (Filtered Devices)</h2>
+  <div id="organization-breakdown-list" class="org-breakdown"></div>
 </section>
 
 <section class="panel">
@@ -53,7 +60,10 @@
         <option value="{{ value }}" {% if filters.organization == value %}selected{% endif %}>{{ value }}</option>
       {% endfor %}
     </select>
-    <button type="submit">Apply</button>
+    <div class="filters__actions">
+      <button type="submit">Apply</button>
+      <button type="button" class="button" id="clear-filters">Clear</button>
+    </div>
   </form>
   <div id="filters-feedback" class="muted" role="status" aria-live="polite" hidden>
     <span class="feedback-message"></span>
@@ -63,6 +73,13 @@
 
 <section class="panel" id="latest-status">
   <h2>Latest Status Per Device</h2>
+  <div class="panel-toolbar">
+    <label>
+      Search visible rows
+      <input type="search" id="latest-status-search" placeholder="Serial / barcode / type" />
+    </label>
+    <button type="button" class="button" id="latest-status-export-visible">Export visible rows (CSV)</button>
+  </div>
   <table>
     <thead><tr><th class="col-serial">Serial</th><th>Barcode</th><th>Organization</th><th>Device Type</th><th class="col-date">Last Tested</th><th class="col-result">Last Result</th><th>Actions</th></tr></thead>
     <tbody id="latest-status-table-body">
@@ -88,6 +105,13 @@
 
 <section class="panel" id="recent-failures">
   <h2>Recent Failures</h2>
+  <div class="panel-toolbar">
+    <label>
+      Search visible rows
+      <input type="search" id="recent-failures-search" placeholder="Serial / reason / type" />
+    </label>
+    <button type="button" class="button" id="recent-failures-export-visible">Export visible rows (CSV)</button>
+  </div>
   <table>
     <thead><tr><th class="col-serial">Serial</th><th>Barcode</th><th>Device Type</th><th>Fail Reason</th><th class="col-date">Tested At</th><th class="col-result">Result</th><th>Actions</th></tr></thead>
     <tbody id="recent-failures-table-body">
@@ -251,4 +275,5 @@
 
 {% block scripts %}
 <script src="/static/dashboard.js"></script>
+<script src="/static/dashboard_enhancements.js"></script>
 {% endblock %}
