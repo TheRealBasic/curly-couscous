@@ -1,30 +1,46 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark" class="scroll-smooth">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}GasDock Certificate Manager{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: ['class', '[data-theme="dark"]'] };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/animations/scale.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css" />
+  <link rel="stylesheet" href="https://unpkg.com/gridjs/dist/theme/mermaid.min.css" />
   <link rel="stylesheet" href="/static/styles.css" />
   {% block head %}{% endblock %}
 </head>
 <body>
   <div class="app-shell">
-    <header class="app-bar">
+    <header class="app-bar glass-panel">
       <div class="app-bar__title-group">
         <p class="app-bar__eyebrow">GasDock</p>
         <h1>{% block app_title %}Certificate Manager{% endblock %}</h1>
       </div>
       <div class="app-bar__status">{% block quick_status %}<span class="muted">No live status</span>{% endblock %}</div>
-      <div class="app-bar__actions">{% block app_actions %}{% endblock %}</div>
+      <div class="app-bar__actions">
+        {% block app_actions %}{% endblock %}
+        <button type="button" class="button button-icon" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <i data-lucide="sun" class="theme-icon theme-icon--sun" aria-hidden="true"></i>
+          <i data-lucide="moon" class="theme-icon theme-icon--moon" aria-hidden="true"></i>
+        </button>
+      </div>
     </header>
 
     <div class="app-body">
       {% block side_nav %}
-      <aside class="app-nav" aria-label="Primary">
-        <a href="/" class="app-nav__item {% block nav_dashboard_class %}{% endblock %}">Dashboard</a>
-        <a href="/#latest-status" class="app-nav__item {% block nav_devices_class %}{% endblock %}">Devices</a>
-        <a href="/#recent-failures" class="app-nav__item {% block nav_failures_class %}{% endblock %}">Failures</a>
-        <a href="/export.zip" class="app-nav__item {% block nav_export_class %}{% endblock %}">Export</a>
+      <aside class="app-nav glass-panel" aria-label="Primary">
+        <a href="/" class="app-nav__item {% block nav_dashboard_class %}{% endblock %}"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+        <a href="/#latest-status" class="app-nav__item {% block nav_devices_class %}{% endblock %}"><i data-lucide="hard-drive"></i>Devices</a>
+        <a href="/#recent-failures" class="app-nav__item {% block nav_failures_class %}{% endblock %}"><i data-lucide="shield-alert"></i>Failures</a>
+        <a href="/export.zip" class="app-nav__item {% block nav_export_class %}{% endblock %}"><i data-lucide="download"></i>Export</a>
       </aside>
       {% endblock %}
 
@@ -35,6 +51,19 @@
       </main>
     </div>
   </div>
+  <script src="https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.6.13"></script>
+  <script src="https://unpkg.com/@popperjs/core@2"></script>
+  <script src="https://unpkg.com/tippy.js@6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/gridjs/dist/gridjs.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/motion@11.11.13/dist/motion.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.17/dist/lenis.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/just-validate@4.3.0/dist/just-validate.production.min.js"></script>
+  <script src="/static/ui.js" defer></script>
+  <script src="/static/dashboard_libraries.js" defer></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
