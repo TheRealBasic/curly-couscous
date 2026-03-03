@@ -269,3 +269,68 @@ def test_print_certificate_returns_original_pdf(tmp_path: Path) -> None:
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("application/pdf")
     assert response.content == certificate_bytes
+
+
+def test_export_organization_other_excludes_ambipar_and_mca(tmp_path: Path) -> None:
+    db = Database(tmp_path / "test.db")
+    db.create_tables()
+
+    cert = tmp_path / "cert.pdf"
+    cert.write_text("ok")
+
+    db.add_test_record(
+        serial="ARRJ0001",
+        device_type="X-am",
+        tested_at=datetime(2026, 2, 24, 10, 0, 0),
+        barcode="AR 123",
+        result="PASS",
+        file_path=str(cert),
+    )
+    db.add_test_record(
+        serial="ARRJ0002",
+        device_type="X-am",
+        tested_at=datetime(2026, 2, 24, 10, 1, 0),
+        barcode="MCA123",
+        result="PASS",
+        file_path=str(cert),
+    )
+    db.add_test_record(
+        serial="ARRJ0003",
+        device_type="X-am",
+        tested_at=datetime(2026, 2, 24, 10, 2, 0),
+        barcode="ZZ-123",
+        result="PASS",
+        file_path=str(cert),
+    )
+
+    app = create_app(AppConfig(), db)
+    client = TestClient(app)
+
+    response = client.get("/export.zip?organization=OTHER&latest_only=false&include_certificates=false")
+    assert response.status_code == 200
+
+    with ZipFile(io.BytesIO(response.content)) as zipped:
+        csv_content = zipped.read("gasdock_report.csv").decode("utf-8")
+
+    rows = list(csv.DictReader(io.StringIO(csv_content)))
+    assert [row["serial"] for row in rows] == ["ARRJ0003"]
+
+
+def test_add_test_record_normalizes_serial_and_barcode(tmp_path: Path) -> None:
+    db = Database(tmp_path / "test.db")
+    db.create_tables()
+
+    db.add_test_record(
+        serial=" arrj7777 ",
+        device_type="X-am",
+        tested_at=datetime(2026, 2, 24, 10, 0, 0),
+        barcode="  mca  123 ",
+        result="PASS",
+        file_path="cert.pdf",
+    )
+
+    with db._session_maker() as session:
+        record = session.scalars(select(DbTestRecord)).one()
+
+    assert record.serial == "ARRJ7777"
+    assert record.barcode == "MCA 123"

@@ -8,3 +8,4 @@ jinja2
 python-dateutil
 pyyaml
 pytest
+httpx

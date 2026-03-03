@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator, Optional
 
-from app.utils import classify_organization
+from app.utils import classify_organization, normalize_barcode
 
 from sqlalchemy import create_engine, func, select, text
 from sqlalchemy.orm import Session, sessionmaker
@@ -85,6 +85,9 @@ class Database:
         fail_reason: Optional[str] = None,
     ) -> TestRecord:
         """Insert test and update device latest snapshot."""
+
+        serial = serial.strip().upper()
+        barcode = normalize_barcode(barcode) if barcode else None
 
         with self._session_maker() as session:
             test = TestRecord(
