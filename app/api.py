@@ -87,7 +87,14 @@ def apply_export_filters(
                 | TestRecord.barcode.ilike("013%")
             )
         elif organization == "OTHER":
-            query = query.where(TestRecord.barcode.is_not(None))
+            query = query.where(
+                TestRecord.barcode.is_not(None)
+                & ~TestRecord.barcode.ilike("AR %")
+                & ~TestRecord.barcode.ilike("MCA%")
+                & ~TestRecord.barcode.ilike("011%")
+                & ~TestRecord.barcode.ilike("012%")
+                & ~TestRecord.barcode.ilike("013%")
+            )
     return query
 
 
@@ -169,11 +176,9 @@ def create_app(config: AppConfig, database: Database) -> FastAPI:
         dashboard_data = get_dashboard_data(db, serial, result, date_from, date_to, organization)
 
         return templates.TemplateResponse(
+            request,
             "index.html",
-            {
-                "request": request,
-                **dashboard_data,
-            },
+            dashboard_data,
         )
 
     @app.get("/api/dashboard", response_class=JSONResponse)
@@ -227,8 +232,9 @@ def create_app(config: AppConfig, database: Database) -> FastAPI:
             select(TestRecord).where(TestRecord.serial == serial.upper()).order_by(desc(TestRecord.tested_at))
         ).all()
         return templates.TemplateResponse(
+            request,
             "device.html",
-            {"request": request, "device": device, "tests": tests, "serial": serial.upper()},
+            {"device": device, "tests": tests, "serial": serial.upper()},
         )
 
     @app.get("/device/{serial}/barcode")
@@ -383,9 +389,9 @@ def create_app(config: AppConfig, database: Database) -> FastAPI:
         export_rows = latest_test_per_device(filtered_rows) if latest_only else filtered_rows
 
         return templates.TemplateResponse(
+            request,
             "print_report.html",
             {
-                "request": request,
                 "rows": export_rows,
                 "organization": organization or "ALL",
                 "include_csv": include_csv,
