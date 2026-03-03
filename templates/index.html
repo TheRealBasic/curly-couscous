@@ -23,9 +23,9 @@
 {% endblock %}
 
 {% block app_actions %}
-<button type="button" class="button" id="open-import-dialog">Import Folder Once</button>
-<button type="button" class="button" id="open-export-dialog">Export ZIP</button>
-<button type="button" class="button" id="open-print-dialog">Print</button>
+<button type="button" class="button" id="open-import-dialog" title="Import a folder once"><i data-lucide="folder-input"></i>Import Folder Once</button>
+<button type="button" class="button" id="open-export-dialog" title="Export a ZIP package"><i data-lucide="archive"></i>Export ZIP</button>
+<button type="button" class="button" id="open-print-dialog" title="Open print-ready report"><i data-lucide="printer"></i>Print</button>
 {% endblock %}
 
 {% block content %}
@@ -39,6 +39,7 @@
 
 <section class="panel" id="organization-breakdown-panel">
   <h2>Organization Breakdown (Filtered Devices)</h2>
+  <canvas id="organization-chart" height="110" aria-label="Organization distribution chart"></canvas>
   <div id="organization-breakdown-list" class="org-breakdown"></div>
 </section>
 
@@ -274,6 +275,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/dashboard.js"></script>
-<script src="/static/dashboard_enhancements.js"></script>
+<script src="/static/dashboard.js" defer></script>
+<script src="/static/dashboard_enhancements.js" defer></script>
 {% endblock %}
